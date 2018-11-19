@@ -7,13 +7,13 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch import nn
 from torchvision import datasets, transforms
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, random_split 
 
 from se_resnet import se_resnet_custom
 from utils import Trainer
 
 
-def get_all_image_label_pairs(root, mod, val_flag):
+def get_all_image_label_pairs(root):
     item = []
     for f in os.listdir(root):
         if os.path.isdir(os.path.join(root,f)):  
@@ -23,19 +23,15 @@ def get_all_image_label_pairs(root, mod, val_flag):
                     base = ff.split('_')[0]
                     bbox_cols = np.fromfile(os.path.join(root,f,base+'_bbox.bin'), dtype=np.float32)
 
-                    # Append item to either train or val dataset, depending on index
-                    if val_flag and val_counter % mod == 0:
-                      item.append((os.path.join(root,f,ff), bbox_cols[9]))
-                    elif val_counter % mod != 0:
-                      item.append((os.path.join(root,f,ff), bbox_cols[9]))
-                    val_counter += 1
+                    # Append items to dataset
+                    item.append((os.path.join(root,f,ff), bbox_cols[9]))
     return item 
 
     
 class CarDataset(Dataset):
-    def __init__(self, root, mod=4, val_flag=0):
+    def __init__(self, root):
         """This Dataset takes in a folder root, the frequency with which to include samples in validation, and a flag for validation."""
-        self.item_names = get_all_image_label_pairs(root, mod, val_flag)
+        self.item_names = get_all_image_label_pairs(root)
         
     def __getitem__(self, index):
         im_path, im_class = self.item_names[index]
@@ -51,7 +47,7 @@ def _get_dataloader(batch_size, dataset):
         dataset,
         batch_size=batch_size,
         num_workers=4,
-        shuffle=False
+        shuffle=True
     )
 
 
@@ -66,8 +62,12 @@ def get_dataloader(batch_size, root):
     val_step = 4
 
     # Create the datasets
-    train_carData = CarDataset(root, val_step, 0)
-    val_carData = CarDataset(root, val_step, 1)
+    carData = CarDataset(root)
+    train_len = int(len(carData) * 0.75)
+    val_len = len(carData) - train_len 
+    print("--- Train Length: {} ---".format(train_len))
+    print("--- Val Length: {} ---".format(val_len))
+    train_carData, val_carData = random_split(carData, (train_len, val_len))
 
     # Create the dataloaders
     train_loader = _get_dataloader(batch_size, train_carData)
