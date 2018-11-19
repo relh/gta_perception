@@ -1,4 +1,3 @@
-from pathlib import Path
 import os
 import numpy as np
 from skimage import io
@@ -14,41 +13,46 @@ from se_resnet import se_resnet_custom
 from utils import Trainer
 
 
-def get_all_images(base, mod, val_flag):
+def get_all_image_label_pairs(root, mod, val_flag):
     item = []
-    for f in os.listdir(base):
-        if os.path.isdir(os.path.join(base,f)):  
+    for f in os.listdir(root):
+        if os.path.isdir(os.path.join(root,f)):  
             val_counter = 0
-            for iii, ff in enumerate(os.listdir(os.path.join(base, f))):
+            for ff in os.listdir(os.path.join(root, f)):
                 if ".jpg" in ff:
-                    root = ff.split('_')[0]
-                    bbox_cols = np.fromfile(os.path.join(base,f,root+'_bbox.bin'), dtype=np.float32)
-                    #proj_cols = np.fromfile(os.path.join(base,f,root+'_proj.bin'), dtype=np.float32)
-                    #cloud_cols = np.fromfile(os.path.join(base,f,root+'_cloud.bin'), dtype=np.float32)
+                    base = ff.split('_')[0]
+                    bbox_cols = np.fromfile(os.path.join(root,f,base+'_bbox.bin'), dtype=np.float32)
 
+                    # Append item to either train or val dataset, depending on index
                     if val_flag and val_counter % mod == 0:
-                      item.append((os.path.join(base,f,ff), bbox_cols[9]))
+                      item.append((os.path.join(root,f,ff), bbox_cols[9]))
                     else:
-                      item.append((os.path.join(base,f,ff), bbox_cols[9]))
+                      item.append((os.path.join(root,f,ff), bbox_cols[9]))
                     val_counter += 1
-            #if iii > 4:
-            #  break
     return item 
 
     
 class CarDataset(Dataset):
-    def __init__(self, base, mod, val_flag):
-        self.item_names = get_all_images(base, mod, val_flag)
+    def __init__(self, root, mod=4, val_flag=0):
+        """This Dataset takes in a folder root, the frequency with which to include samples in validation, and a flag for validation."""
+        self.item_names = get_all_image_label_pairs(root, mod, val_flag)
         
     def __getitem__(self, index):
         im_path, im_class = self.item_names[index]
         loaded_im = io.imread(im_path).transpose((2,0,1))
-        #im_class = np.ones(1) * im_class
-        #im_class = torch.tensor(im_class)#.unsqueeze(1)
         return torch.tensor(loaded_im).float(), torch.from_numpy(np.array(im_class)).long()
 
     def __len__(self):
         return len(self.item_names)
+
+
+def _get_dataloader(batch_size, dataset):
+    return DataLoader(
+        dataset,
+        batch_size=batch_size,
+        num_workers=1,
+        shuffle=True
+    )
 
 
 def get_dataloader(batch_size, root):
@@ -59,33 +63,31 @@ def get_dataloader(batch_size, root):
     data_augmentation = [transforms.RandomSizedCrop(1024),
                          transforms.RandomHorizontalFlip(), ]
 
-    base = "/hdd/trainval/" # Change this to point to your path
     val_step = 4
-    train_carData = CarDataset(base, 4, val_step)
-    val_carData = CarDataset(base, 4, val_step)
 
-    train_loader = DataLoader(
-        train_carData,
-        batch_size=batch_size,
-        num_workers=1,
-        shuffle=True
-    )
-    val_loader = DataLoader(
-        val_carData,
-        batch_size=batch_size,
-        num_workers=1,
-        shuffle=True
-    )
+    # Create the datasets
+    train_carData = CarDataset(root, 4, val_step)
+    val_carData = CarDataset(root, 4, val_step)
 
+    # Create the dataloaders
+    train_loader = _get_dataloader(batch_size, train_carData)
+    val_loader = _get_dataloader(batch_size, val_carData)
     return train_loader, val_loader
 
 
 def main(batch_size, root):
+    # Get the train and validation data loaders
     train_loader, test_loader = get_dataloader(batch_size, root)
+
+    # Specify the GPUs to use
     gpus = list(range(torch.cuda.device_count()))
     print('--- GPUS: {} ---'.format(str(gpus)))
+
+    # Build the model to run
     se_resnet = nn.DataParallel(se_resnet_custom(num_classes=23), device_ids=gpus)
     #se_resnet = se_resnet20(num_classes=23)#, device_ids=torch.device("cpu"))
+
+    # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
     optimizer = optim.SGD(params=se_resnet.parameters(), lr=0.6 / 1024 * batch_size, momentum=0.9, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.StepLR(optimizer, 30, gamma=0.1)
     trainer = Trainer(se_resnet, optimizer, F.cross_entropy, save_dir=".")
@@ -96,7 +98,7 @@ if __name__ == '__main__':
     import argparse
 
     p = argparse.ArgumentParser()
-    p.add_argument("--root", default='/hdd/', type=str, help="carnet data root")
-    p.add_argument("--batch_size", default=2, type=int)
+    p.add_argument("--root", default='/home/relh/.kaggle/trainval/', type=str, help="carnet data root")
+    p.add_argument("--batch_size", default=2, type=int, help="batch size")
     args = p.parse_args()
     main(args.batch_size, args.root)

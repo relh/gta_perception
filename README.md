@@ -19,3 +19,8 @@ It contains our custom code.
 - `calc_mean_std.py`
 - `mean_std.txt`
 
+2) Running our CarNet model
+- `carnet.py`
+
+CarNet is a slightly modified version of the squeeze and excitation ResNet. It contains 4 residual blocks instead of the neighboring 3 and 5.
+CarNet is trained to predict which of the 23 object classes an image contains. 

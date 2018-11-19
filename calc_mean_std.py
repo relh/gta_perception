@@ -1,9 +1,3 @@
-#import numpy as np # linear algebra
-#import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
-
-#import torch
-#import PIL
-
 import torch
 import os
 import numpy as np
@@ -11,7 +5,10 @@ from skimage import io
 from pdb import set_trace
 from torch.utils.data import Dataset, DataLoader
 
+from carnet import CarDataset 
+
 def get_all_images(base):
+    """This function collects image names and their associated labels from a directory."""
     item = []
     for f in os.listdir(base):
         if os.path.isdir(os.path.join(base,f)):  
@@ -26,6 +23,7 @@ def get_all_images(base):
 
     
 def compute_mean_std(loader):
+    """This function computes the mean and standard deviation of the 3 image channels for all the images"""
     mean = torch.zeros(3)
     std = torch.zeros(3)
     nb_samples = 0.
@@ -48,16 +46,15 @@ def compute_mean_std(loader):
     std /= nb_samples
     return mean, std
     
-def main():
-    print('--- dataset creator ---')
-    base = "/hdd/trainval/" # Change this to point to your path
-    carData = CarDataset(base)
-    
-    print('--- mean + std calc ---')
-    data_loader = car_dataloader(carData)
-    mean, std = compute_mean_std(data_loader)
-    print(mean)
-    print(std)
 
 if __name__ == "__main__":
-  main()
+    base = "/hdd/trainval/" # Change this to point to your datapath
+
+    print('--- dataset creator ---')
+    trainval_carData = CarDataset(base)
+    
+    print('--- mean + std calc ---')
+    train_loader = _get_dataloader(10, trainval_carData)
+    mean, std = compute_mean_std(train_loader)
+    print(mean)
+    print(std)
