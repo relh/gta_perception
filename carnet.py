@@ -50,8 +50,8 @@ def _get_dataloader(batch_size, dataset):
     return DataLoader(
         dataset,
         batch_size=batch_size,
-        num_workers=1,
-        shuffle=True
+        num_workers=4,
+        shuffle=False
     )
 
 
@@ -98,7 +98,7 @@ if __name__ == '__main__':
     import argparse
 
     p = argparse.ArgumentParser()
-    p.add_argument("--root", default='/home/relh/.kaggle/trainval/', type=str, help="carnet data root")
+    p.add_argument("--root", default='/hdd/trainval/', type=str, help="carnet data root")
     p.add_argument("--batch_size", default=1, type=int, help="batch size")
     p.add_argument("--lr", default=1e-1, type=float, help="learning rate")
     args = p.parse_args()
