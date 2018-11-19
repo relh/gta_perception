@@ -26,7 +26,7 @@ def get_all_image_label_pairs(root, mod, val_flag):
                     # Append item to either train or val dataset, depending on index
                     if val_flag and val_counter % mod == 0:
                       item.append((os.path.join(root,f,ff), bbox_cols[9]))
-                    else:
+                    elif val_counter % mod != 0:
                       item.append((os.path.join(root,f,ff), bbox_cols[9]))
                     val_counter += 1
     return item 
@@ -66,8 +66,8 @@ def get_dataloader(batch_size, root):
     val_step = 4
 
     # Create the datasets
-    train_carData = CarDataset(root, 4, val_step)
-    val_carData = CarDataset(root, 4, val_step)
+    train_carData = CarDataset(root, val_step, 0)
+    val_carData = CarDataset(root, val_step, 1)
 
     # Create the dataloaders
     train_loader = _get_dataloader(batch_size, train_carData)
