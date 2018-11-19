@@ -25,6 +25,10 @@ def get_all_image_label_pairs(root):
 
                     # Append items to dataset
                     item.append((os.path.join(root,f,ff), bbox_cols[9]))
+
+                    # Commented out code for having the bounding box be the label
+                    # Each row contains information of a bounding box: rotation vector, position (centroid x, y, z), size of the bounding box (length, width, height)
+                    #item.append((os.path.join(root,f,ff), bbox_cols[0:9]))
     return item 
 
     
