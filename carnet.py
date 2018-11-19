@@ -56,11 +56,11 @@ def _get_dataloader(batch_size, dataset):
 
 
 def get_dataloader(batch_size, root):
-    to_normalized_tensor = [transforms.CenterCrop(1024),
+    to_normalized_tensor = [transforms.CenterCrop(224), # 1024
                             transforms.ToTensor(),
                             transforms.Normalize(mean=[92.458, 91.290, 88.659], std=[35.646, 33.245, 31.304])]
 
-    data_augmentation = [transforms.RandomSizedCrop(1024),
+    data_augmentation = [transforms.RandomSizedCrop(224), # 1024
                          transforms.RandomHorizontalFlip(), ]
 
     val_step = 4
@@ -75,7 +75,7 @@ def get_dataloader(batch_size, root):
     return train_loader, val_loader
 
 
-def main(batch_size, root):
+def main(batch_size, root, lr):
     # Get the train and validation data loaders
     train_loader, test_loader = get_dataloader(batch_size, root)
 
@@ -88,7 +88,7 @@ def main(batch_size, root):
     #se_resnet = se_resnet20(num_classes=23)#, device_ids=torch.device("cpu"))
 
     # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
-    optimizer = optim.SGD(params=se_resnet.parameters(), lr=0.6 / 1024 * batch_size, momentum=0.9, weight_decay=1e-4)
+    optimizer = optim.SGD(params=se_resnet.parameters(), lr=lr, momentum=0.9, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.StepLR(optimizer, 30, gamma=0.1)
     trainer = Trainer(se_resnet, optimizer, F.cross_entropy, save_dir=".")
     trainer.loop(100, train_loader, test_loader, scheduler)
@@ -99,6 +99,7 @@ if __name__ == '__main__':
 
     p = argparse.ArgumentParser()
     p.add_argument("--root", default='/home/relh/.kaggle/trainval/', type=str, help="carnet data root")
-    p.add_argument("--batch_size", default=2, type=int, help="batch size")
+    p.add_argument("--batch_size", default=1, type=int, help="batch size")
+    p.add_argument("--lr", default=1e-1, type=float, help="learning rate")
     args = p.parse_args()
-    main(args.batch_size, args.root)
+    main(args.batch_size, args.root, args.lr)
