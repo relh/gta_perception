@@ -21,7 +21,7 @@ class Trainer(object):
     def _iteration(self, data_loader, is_train=True):
         loop_loss = []
         accuracy = []
-        for i, (data, target) in enumerate(tqdm(data_loader, ncols=80)):
+        for i, (data, target) in enumerate(tqdm(data_loader, ncols=160, disable=True)):
             if self.cuda:
                 data, target = data.cuda(), target.cuda()
             output = self.model(data)
@@ -32,8 +32,8 @@ class Trainer(object):
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-            print("TRAIN epoch {}: \t itr {:<5}/ {} \t loss {:.2f} \t accuracy {} \t it/s {:.2f} \t lr {:.5f}"\
-                  .format(self.epoch, i, len(data_loader), loss.data.item(), sum(accuracy) / i, 1.0, 1.0))
+            print("TRAIN epoch {}: \t itr {:<5}/ {} \t loss {:.2f} \t accuracy {:.3f} \t it/s {:.2f} \t lr {:.5f}"\
+                  .format(self.epoch, i, len(data_loader), loss.data.item(), sum(accuracy) / (i+1), 1.0, 1.0))
 
         mode = "train" if is_train else "test"
         print(f">>>[{mode}] loss: {sum(loop_loss):.2f}/accuracy: {sum(accuracy) / len(data_loader.dataset):.2%}")
