@@ -16,11 +16,12 @@ class Trainer(object):
         self.loss_f = loss_f
         self.save_dir = save_dir
         self.save_freq = save_freq
+        self.epoch = 0
 
     def _iteration(self, data_loader, is_train=True):
         loop_loss = []
         accuracy = []
-        for data, target in tqdm(data_loader, ncols=80):
+        for i, (data, target) in enumerate(tqdm(data_loader, ncols=80)):
             if self.cuda:
                 data, target = data.cuda(), target.cuda()
             output = self.model(data)
@@ -31,6 +32,9 @@ class Trainer(object):
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
+            print("TRAIN epoch {}: \t itr {:<5}/ {} \t loss {:.2f} \t accuracy {} \t it/s {:.2f} \t lr {:.5f}"\
+                  .format(self.epoch, i, len(data_loader), loss.data.item(), sum(accuracy) / i, 1.0, 1.0))
+
         mode = "train" if is_train else "test"
         print(f">>>[{mode}] loss: {sum(loop_loss):.2f}/accuracy: {sum(accuracy) / len(data_loader.dataset):.2%}")
         return loop_loss, accuracy
@@ -47,6 +51,7 @@ class Trainer(object):
 
     def loop(self, epochs, train_data, test_data, scheduler=None):
         for ep in range(1, epochs + 1):
+            self.epoch = ep
             if scheduler is not None:
                 scheduler.step()
             print("epochs: {}".format(ep))
