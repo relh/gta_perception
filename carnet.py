@@ -1,5 +1,7 @@
 import os
 import numpy as np
+import pickle
+import numpy as np
 from skimage import io
 
 import torch
@@ -12,16 +14,20 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from se_resnet import se_resnet_custom
 from utils import Trainer
 
-
 def get_all_image_label_pairs(root):
     item = []
     for f in os.listdir(root):
         if os.path.isdir(os.path.join(root,f)):  
-            val_counter = 0
+            i = 0
             for ff in os.listdir(os.path.join(root, f)):
+                i += 1
+                if i > 20: break 
                 if ".jpg" in ff:
                     base = ff.split('_')[0]
-                    bbox_cols = np.fromfile(os.path.join(root,f,base+'_bbox.bin'), dtype=np.float32)
+                    if os.path.exists(os.path.join(root,f,base+'_bbox.bin')):
+                      bbox_cols = np.fromfile(os.path.join(root,f,base+'_bbox.bin'), dtype=np.float32)
+                    else:
+                      bbox_cols = [0]*10
 
                     # Append items to dataset
                     item.append((os.path.join(root,f,ff), bbox_cols[9]))
@@ -29,18 +35,20 @@ def get_all_image_label_pairs(root):
                     # Commented out code for having the bounding box be the label
                     # Each row contains information of a bounding box: rotation vector, position (centroid x, y, z), size of the bounding box (length, width, height)
                     #item.append((os.path.join(root,f,ff), bbox_cols[0:9]))
+            break
     return item 
 
     
 class CarDataset(Dataset):
-    def __init__(self, root):
+    def __init__(self, root, transform):
         """This Dataset takes in a folder root, the frequency with which to include samples in validation, and a flag for validation."""
         self.item_names = get_all_image_label_pairs(root)
+        self.transform = transform
         
     def __getitem__(self, index):
         im_path, im_class = self.item_names[index]
         loaded_im = io.imread(im_path).transpose((2,0,1))
-        return torch.tensor(loaded_im).float(), torch.from_numpy(np.array(im_class)).long()
+        return im_path, torch.tensor(loaded_im).float(), torch.from_numpy(np.array(im_class)).long()
 
     def __len__(self):
         return len(self.item_names)
@@ -55,19 +63,19 @@ def _get_dataloader(batch_size, dataset):
     )
 
 
-def get_dataloader(batch_size, root):
-    to_normalized_tensor = [transforms.CenterCrop(1024), # 1024
+def get_dataloader(batch_size, root, split_size=0.75):
+    to_normalized_tensor = transforms.Compose([transforms.CenterCrop(1024),
                             transforms.ToTensor(),
-                            transforms.Normalize(mean=[92.458, 91.290, 88.659], std=[35.646, 33.245, 31.304])]
+                            transforms.Normalize(mean=[92.458, 91.290, 88.659], std=[35.646, 33.245, 31.304])])
 
-    data_augmentation = [transforms.RandomSizedCrop(1024), # 1024
+    data_augmentation = [transforms.RandomSizedCrop(1024),
                          transforms.RandomHorizontalFlip(), ]
 
     val_step = 4
 
     # Create the datasets
-    carData = CarDataset(root)
-    train_len = int(len(carData) * 0.75)
+    carData = CarDataset(root, to_normalized_tensor)
+    train_len = int(len(carData) * split_size)
     val_len = len(carData) - train_len 
     print("--- Train Length: {} ---".format(train_len))
     print("--- Val Length: {} ---".format(val_len))
@@ -87,25 +95,37 @@ def main(batch_size, root, lr):
     gpus = list(range(torch.cuda.device_count()))
     print('--- GPUS: {} ---'.format(str(gpus)))
 
+    # Build the model to run
+    se_resnet = nn.DataParallel(se_resnet_custom(num_classes=23), device_ids=gpus)
+    #se_resnet = se_resnet20(num_classes=23)#, device_ids=torch.device("cpu"))
+
+    # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
+    optimizer = optim.SGD(params=se_resnet.parameters(), lr=lr, momentum=0.9, weight_decay=1e-4)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, 30, gamma=0.1)
+    trainer = Trainer(se_resnet, optimizer, F.cross_entropy, save_dir=".")
+
     train = False
     if train:
-      # Build the model to run
-      se_resnet = nn.DataParallel(se_resnet_custom(num_classes=23), device_ids=gpus)
-      #se_resnet = se_resnet20(num_classes=23)#, device_ids=torch.device("cpu"))
-
-      # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
-      optimizer = optim.SGD(params=se_resnet.parameters(), lr=lr, momentum=0.9, weight_decay=1e-4)
-      scheduler = optim.lr_scheduler.StepLR(optimizer, 30, gamma=0.1)
-      trainer = Trainer(se_resnet, optimizer, F.cross_entropy, save_dir=".")
       trainer.loop(100, train_loader, test_loader, scheduler)
 
-    test = True
-    if test:
+    testing = True
+    if testing:
       details = torch.load("new_models/model_epoch_9.pth")
       new_details = dict([(k[7:], v) for k, v in details['weight'].items()])
-      #print(new_details)
-      senet = se_resnet_custom(num_classes=23)
-      senet.load_state_dict(new_details)
+      se_resnet = se_resnet_custom(num_classes=23)
+      se_resnet.load_state_dict(new_details)
+      se_resnet.eval()
+      t_l_1, t_l_2 = get_dataloader(batch_size, '/hdd/test/', 1.0)
+      outputs = trainer.test(t_l_1)
+      np.array(outputs[1])
+      with open('submission.csv', 'w') as sub:
+        sub.write('guid/image,label\n')
+        for name, val in outputs:
+          mod_name = name[0].split('/')[3] + '/' + name[0].split('/')[4].split('_')[0]
+          mod_val = int(val)
+          sub.write(mod_name + ',' + str(mod_val) + '\n')
+      print('done!')
+
 
 if __name__ == '__main__':
     import argparse
