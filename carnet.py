@@ -56,11 +56,11 @@ def _get_dataloader(batch_size, dataset):
 
 
 def get_dataloader(batch_size, root):
-    to_normalized_tensor = [transforms.CenterCrop(224), # 1024
+    to_normalized_tensor = [transforms.CenterCrop(1024), # 1024
                             transforms.ToTensor(),
                             transforms.Normalize(mean=[92.458, 91.290, 88.659], std=[35.646, 33.245, 31.304])]
 
-    data_augmentation = [transforms.RandomSizedCrop(224), # 1024
+    data_augmentation = [transforms.RandomSizedCrop(1024), # 1024
                          transforms.RandomHorizontalFlip(), ]
 
     val_step = 4
@@ -87,16 +87,25 @@ def main(batch_size, root, lr):
     gpus = list(range(torch.cuda.device_count()))
     print('--- GPUS: {} ---'.format(str(gpus)))
 
-    # Build the model to run
-    se_resnet = nn.DataParallel(se_resnet_custom(num_classes=23), device_ids=gpus)
-    #se_resnet = se_resnet20(num_classes=23)#, device_ids=torch.device("cpu"))
+    train = False
+    if train:
+      # Build the model to run
+      se_resnet = nn.DataParallel(se_resnet_custom(num_classes=23), device_ids=gpus)
+      #se_resnet = se_resnet20(num_classes=23)#, device_ids=torch.device("cpu"))
 
-    # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
-    optimizer = optim.SGD(params=se_resnet.parameters(), lr=lr, momentum=0.9, weight_decay=1e-4)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, 30, gamma=0.1)
-    trainer = Trainer(se_resnet, optimizer, F.cross_entropy, save_dir=".")
-    trainer.loop(100, train_loader, test_loader, scheduler)
+      # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
+      optimizer = optim.SGD(params=se_resnet.parameters(), lr=lr, momentum=0.9, weight_decay=1e-4)
+      scheduler = optim.lr_scheduler.StepLR(optimizer, 30, gamma=0.1)
+      trainer = Trainer(se_resnet, optimizer, F.cross_entropy, save_dir=".")
+      trainer.loop(100, train_loader, test_loader, scheduler)
 
+    test = True
+    if test:
+      details = torch.load("new_models/model_epoch_9.pth")
+      new_details = dict([(k[7:], v) for k, v in details['weight'].items()])
+      #print(new_details)
+      senet = se_resnet_custom(num_classes=23)
+      senet.load_state_dict(new_details)
 
 if __name__ == '__main__':
     import argparse
