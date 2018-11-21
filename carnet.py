@@ -32,6 +32,7 @@ def get_all_image_label_pairs(root):
                     # Commented out code for having the bounding box be the label
                     # Each row contains information of a bounding box: rotation vector, position (centroid x, y, z), size of the bounding box (length, width, height)
                     #item.append((os.path.join(root,f,ff), bbox_cols[0:9]))
+            break
     return item 
 
     
@@ -117,11 +118,14 @@ def main(batch_size, root, lr):
       se_resnet.eval()
       t_l_1, t_l_2 = get_dataloader(batch_size, '/hdd/test/', 1.0)
       outputs = trainer.test(t_l_1)
+      with open('classes.csv', 'r') as class_key:
+        reader = csv.reader(class_key)
+        list_mapping = list(reader)
       with open('submission.csv', 'w') as sub:
         sub.write('guid/image,label\n')
         for name, val in outputs:
           mod_name = name[0].split('/')[3] + '/' + name[0].split('/')[4].split('_')[0]
-          mod_val = int(val)
+          mod_val = list_mapping[int(val)+1][-1]
           sub.write(mod_name + ',' + str(mod_val) + '\n')
       print('done!')
 
