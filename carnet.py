@@ -18,10 +18,7 @@ def get_all_image_label_pairs(root):
     item = []
     for f in os.listdir(root):
         if os.path.isdir(os.path.join(root,f)):  
-            i = 0
             for ff in os.listdir(os.path.join(root, f)):
-                i += 1
-                if i > 20: break 
                 if ".jpg" in ff:
                     base = ff.split('_')[0]
                     if os.path.exists(os.path.join(root,f,base+'_bbox.bin')):
@@ -35,7 +32,6 @@ def get_all_image_label_pairs(root):
                     # Commented out code for having the bounding box be the label
                     # Each row contains information of a bounding box: rotation vector, position (centroid x, y, z), size of the bounding box (length, width, height)
                     #item.append((os.path.join(root,f,ff), bbox_cols[0:9]))
-            break
     return item 
 
     
@@ -47,8 +43,12 @@ class CarDataset(Dataset):
         
     def __getitem__(self, index):
         im_path, im_class = self.item_names[index]
-        loaded_im = io.imread(im_path).transpose((2,0,1))
-        return im_path, torch.tensor(loaded_im).float(), torch.from_numpy(np.array(im_class)).long()
+        loaded_im = io.imread(im_path)
+        trans_im = self.transform(loaded_im)
+        trans_im.permute(2,0,1) 
+        # TODO what transformations are needed
+        #print(trans_im)
+        return im_path, torch.tensor(trans_im).float(), torch.from_numpy(np.array(im_class)).long()
 
     def __len__(self):
         return len(self.item_names)
@@ -64,12 +64,11 @@ def _get_dataloader(batch_size, dataset):
 
 
 def get_dataloader(batch_size, root, split_size=0.75):
-    to_normalized_tensor = transforms.Compose([transforms.CenterCrop(1024),
-                            transforms.ToTensor(),
-                            transforms.Normalize(mean=[92.458, 91.290, 88.659], std=[35.646, 33.245, 31.304])])
-
-    data_augmentation = [transforms.RandomSizedCrop(1024),
-                         transforms.RandomHorizontalFlip(), ]
+    to_normalized_tensor = transforms.Compose([transforms.ToTensor()])#,
+    #transforms.Normalize(mean=[92.458, 91.290, 88.659], std=[35.646, 33.245, 31.304])])
+    #transforms.CenterCrop(1024)
+    #data_augmentation = [transforms.RandomSizedCrop(1024),
+    #                    transforms.RandomHorizontalFlip(), ]
 
     val_step = 4
 
@@ -100,11 +99,12 @@ def main(batch_size, root, lr):
     #se_resnet = se_resnet20(num_classes=23)#, device_ids=torch.device("cpu"))
 
     # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
-    optimizer = optim.SGD(params=se_resnet.parameters(), lr=lr, momentum=0.9, weight_decay=1e-4)
+    #optimizer = optim.SGD(params=se_resnet.parameters(), lr=lr, momentum=0.9, weight_decay=1e-4)
+    optimizer = optim.Adam(params=se_resnet.parameters(), lr=lr)#, momentum=0.9, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.StepLR(optimizer, 30, gamma=0.1)
     trainer = Trainer(se_resnet, optimizer, F.cross_entropy, save_dir=".")
 
-    train = False
+    train = True 
     if train:
       trainer.loop(100, train_loader, test_loader, scheduler)
 
@@ -117,7 +117,6 @@ def main(batch_size, root, lr):
       se_resnet.eval()
       t_l_1, t_l_2 = get_dataloader(batch_size, '/hdd/test/', 1.0)
       outputs = trainer.test(t_l_1)
-      np.array(outputs[1])
       with open('submission.csv', 'w') as sub:
         sub.write('guid/image,label\n')
         for name, val in outputs:
@@ -133,6 +132,6 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser()
     p.add_argument("--root", default='/hdd/trainval/', type=str, help="carnet data root")
     p.add_argument("--batch_size", default=1, type=int, help="batch size")
-    p.add_argument("--lr", default=1e-1, type=float, help="learning rate")
+    p.add_argument("--lr", default=1e-3, type=float, help="learning rate")
     args = p.parse_args()
     main(args.batch_size, args.root, args.lr)
