@@ -106,11 +106,9 @@ def main(batch_size, root, lr, load, load_epoch, train, testing):
     if load:
       details = torch.load("model_epoch_{}.pth".format(str(load_epoch)))
       #new_details = dict([(k[7:], v) for k, v in details['weight'].items()])
-      #set_trace()
       se_resnet.load_state_dict(details['weight'])
 
     # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
-    #optimizer = optim.SGD(params=se_resnet.parameters(), lr=lr, momentum=0.9, weight_decay=1e-4)
     optimizer = optim.Adam(params=se_resnet.parameters(), lr=lr)#, momentum=0.9, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.StepLR(optimizer, 30, gamma=0.1)
     trainer = Trainer(se_resnet, optimizer, F.cross_entropy, save_dir=".")
@@ -119,16 +117,9 @@ def main(batch_size, root, lr, load, load_epoch, train, testing):
       trainer.loop(100, train_loader, test_loader, scheduler)
 
     if testing:
-      '''details = torch.load("new_models/model_epoch_9.pth")
-      new_details = dict([(k[7:], v) for k, v in details['weight'].items()])
-      se_resnet = se_resnet_custom(num_classes=23)
-      se_resnet.load_state_dict(new_details)'''
       se_resnet.eval()
       t_l_1, t_l_2 = get_dataloader(batch_size, '/hdd/test/', 1.0)
       outputs = trainer.test(t_l_1)
-      #with open('classes.csv', 'r') as class_key:
-      #  reader = csv.reader(class_key)
-      #  list_mapping = list(reader)
       with open('submission.csv', 'w') as sub:
         sub.write('guid/image,label\n')
         for name, val in outputs:
