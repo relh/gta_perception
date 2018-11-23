@@ -36,7 +36,7 @@ class Trainer(object):
                 self.optimizer.step()
             if i % 10 == 0:
               print("{} epoch {}: \t itr {:<5}/ {} \t loss {:.2f} \t accuracy {:.3f} \t it/s {:.2f} \t lr {:.3f}"\
-                  .format('TRAIN' if is_train else 'TEST', self.epoch, i, len(data_loader), loss.data.item(), sum(accuracy) / (i+1), 1.0, 1.0))
+                  .format('TRAIN' if is_train else 'TEST', self.epoch, i, len(data_loader), loss.data.item(), sum(accuracy) / ((i+1)*2), 1.0, 1.0))
 
         mode = "train" if is_train else "test"
         print(f">>>[{mode}] loss: {sum(loop_loss):.2f}/accuracy: {sum(accuracy) / len(data_loader.dataset):.2%}")

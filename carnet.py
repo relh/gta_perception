@@ -4,6 +4,8 @@ import pickle
 import csv
 import numpy as np
 from skimage import io
+from pdb import set_trace
+from PIL import Image
 
 import torch
 import torch.nn.functional as F
@@ -49,7 +51,8 @@ class CarDataset(Dataset):
         
     def __getitem__(self, index):
         im_path, im_class = self.item_names[index]
-        loaded_im = io.imread(im_path)
+        #loaded_im = io.imread(im_path)
+        loaded_im = Image.open(im_path)
         trans_im = self.transform(loaded_im)
         trans_im.permute(2,0,1) 
         return im_path, torch.tensor(trans_im).float(), torch.from_numpy(np.array(im_class)).long()
@@ -62,23 +65,21 @@ def _get_dataloader(batch_size, dataset):
     return DataLoader(
         dataset,
         batch_size=batch_size,
-        num_workers=4,
+        num_workers=0,
         shuffle=True
     )
 
 
 def get_dataloader(batch_size, root, split_size=0.75):
-    to_normalized_tensor = transforms.Compose([transforms.ToTensor()])#,
+    #to_normalized_tensor = transforms.Compose([transforms.ToTensor()])#,
     #transforms.Normalize(mean=[92.458, 91.290, 88.659], std=[35.646, 33.245, 31.304])])
     #transforms.CenterCrop(1024)
-    #data_augmentation = [transforms.RandomSizedCrop(1024),
-    #                    transforms.RandomHorizontalFlip(), ]
-
+    data_augmentation = transforms.Compose([transforms.RandomResizedCrop(1024), transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize(mean=[.362, .358, .347], std=[.139, .130, .123])])
     val_step = 4
 
     # Create the datasets
     item_names = get_all_image_label_pairs(root)
-    carData = CarDataset(item_names, to_normalized_tensor)
+    carData = CarDataset(item_names, data_augmentation)
     train_len = int(len(carData) * split_size)
     val_len = len(carData) - train_len 
     print("--- Train Length: {} ---".format(train_len))
@@ -100,7 +101,8 @@ def main(batch_size, root, lr, load, load_epoch, train, testing):
     print('--- GPUS: {} ---'.format(str(gpus)))
 
     # Build the model to run
-    se_resnet = nn.DataParallel(se_resnet_custom(num_classes=3), device_ids=gpus)
+    #se_resnet = nn.DataParallel(se_resnet_custom(num_classes=3), device_ids=gpus)
+    se_resnet = se_resnet_custom(num_classes=3)#, device_ids=gpus)
     #se_resnet = se_resnet20(num_classes=23)#, device_ids=torch.device("cpu"))
 
     if load:
@@ -134,11 +136,11 @@ if __name__ == '__main__':
 
     p = argparse.ArgumentParser()
     p.add_argument("--root", default='/hdd/trainval/', type=str, help="carnet data root")
-    p.add_argument("--batch_size", default=1, type=int, help="batch size")
+    p.add_argument("--batch_size", default=2, type=int, help="batch size")
     p.add_argument("--lr", default=1e-3, type=float, help="learning rate")
     p.add_argument("--load", default=False, type=bool, help="whether to load a model")
-    p.add_argument("--load_epoch", default=4, type=int, help="what epoch to load")
+    p.add_argument("--load_epoch", default=1, type=int, help="what epoch to load")
     p.add_argument("--train", default=True, type=bool, help="whether to train a model")
-    p.add_argument("--test", default=True, type=bool, help="whether to test a model")
+    p.add_argument("--test", default=False, type=bool, help="whether to test a model")
     args = p.parse_args()
     main(args.batch_size, args.root, args.lr, args.load, args.load_epoch, args.train, args.test)
