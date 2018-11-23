@@ -21,10 +21,12 @@ class Trainer(object):
     def _iteration(self, data_loader, is_train=True):
         loop_loss = []
         accuracy = []
-        for i, (data, target) in enumerate(tqdm(data_loader, ncols=160, disable=True)):
+        outputs = []
+        for i, (path, data, target) in enumerate(tqdm(data_loader, ncols=160, disable=True)):
             if self.cuda:
                 data, target = data.cuda(), target.cuda()
             output = self.model(data)
+            outputs.append((path, int(output.data.max(1)[1])))
             loss = self.loss_f(output, target)
             loop_loss.append(loss.data.item() / len(data_loader))
             accuracy.append((output.data.max(1)[1] == target.data).sum().item())
@@ -32,22 +34,27 @@ class Trainer(object):
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-            print("TRAIN epoch {}: \t itr {:<5}/ {} \t loss {:.2f} \t accuracy {:.3f} \t it/s {:.2f} \t lr {:.5f}"\
-                  .format(self.epoch, i, len(data_loader), loss.data.item(), sum(accuracy) / (i+1), 1.0, 1.0))
+            if i % 1000 == 0:
+              print("{} epoch {}: \t itr {:<5}/ {} \t loss {:.2f} \t accuracy {:.3f} \t it/s {:.2f} \t lr {:.3f}"\
+                  .format('TRAIN' if is_train else 'TEST', self.epoch, i, len(data_loader), loss.data.item(), sum(accuracy) / ((i+1)*2), 1.0, 1.0))
 
         mode = "train" if is_train else "test"
         print(f">>>[{mode}] loss: {sum(loop_loss):.2f}/accuracy: {sum(accuracy) / len(data_loader.dataset):.2%}")
-        return loop_loss, accuracy
+        if is_train:
+          return loop_loss, accuracy, None
+        else:
+          return loop_loss, accuracy, outputs
 
     def train(self, data_loader):
         self.model.train()
         with torch.enable_grad():
-            loss, correct = self._iteration(data_loader)
+            loss, correct, _ = self._iteration(data_loader)
 
     def test(self, data_loader):
         self.model.eval()
         with torch.no_grad():
-            loss, correct = self._iteration(data_loader, is_train=False)
+            loss, correct, outputs = self._iteration(data_loader, is_train=False)
+        return outputs
 
     def loop(self, epochs, train_data, test_data, scheduler=None):
         for ep in range(1, epochs + 1):
