@@ -105,7 +105,7 @@ def main(batch_size, root, lr, load, load_epoch, train, testing):
     se_resnet = se_resnet_custom(num_classes=3)#, device_ids=gpus)
     #se_resnet = se_resnet20(num_classes=23)#, device_ids=torch.device("cpu"))
 
-    if load:
+    if load_epoch > 0:
       details = torch.load("models/v6/model_epoch_{}.pth".format(str(load_epoch)))
       #new_details = dict([(k[7:], v) for k, v in details['weight'].items()])
       se_resnet.load_state_dict(details['weight'])
@@ -138,9 +138,8 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser()
     p.add_argument("--root", default='/hdd/trainval/', type=str, help="carnet data root")
     p.add_argument("--batch_size", default=1, type=int, help="batch size")
-    p.add_argument("--lr", default=1e-2, type=float, help="learning rate")
-    p.add_argument("--load", default=False, type=bool, help="whether to load a model")
-    p.add_argument("--load_epoch", default=18, type=int, help="what epoch to load")
+    p.add_argument("--lr", default=1e-1, type=float, help="learning rate")
+    p.add_argument("--load_epoch", default=18, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--train", default=False, type=bool, help="whether to train a model")
     p.add_argument("--test", default=True, type=bool, help="whether to test a model")
     args = p.parse_args()
