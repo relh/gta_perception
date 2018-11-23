@@ -26,7 +26,7 @@ class Trainer(object):
             if self.cuda:
                 data, target = data.cuda(), target.cuda()
             output = self.model(data)
-            outputs.append((path, int(output.data.max(1)[1])))
+            #outputs.append((path, int(output.data.max(1)[1])))
             loss = self.loss_f(output, target)
             loop_loss.append(loss.data.item() / len(data_loader))
             accuracy.append((output.data.max(1)[1] == target.data).sum().item())
@@ -34,9 +34,9 @@ class Trainer(object):
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-            if i % 100 == 0:
+            if i % 1000 == 0:
               print("{} epoch {}: \t itr {:<5}/ {} \t loss {:.2f} \t accuracy {:.3f} \t it/s {:.2f} \t lr {:.3f}"\
-                  .format('TRAIN' if is_train else 'TEST', self.epoch, i, len(data_loader), loss.data.item(), sum(accuracy) / ((i+1)*3), 1.0, 1.0))
+                  .format('TRAIN' if is_train else 'TEST', self.epoch, i, len(data_loader), loss.data.item(), sum(accuracy) / ((i+1)*7), 1.0, 1.0))
 
         mode = "train" if is_train else "test"
         print(f">>>[{mode}] loss: {sum(loop_loss):.2f}/accuracy: {sum(accuracy) / len(data_loader.dataset):.2%}")

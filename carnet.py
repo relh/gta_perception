@@ -65,7 +65,7 @@ def _get_dataloader(batch_size, dataset):
     return DataLoader(
         dataset,
         batch_size=batch_size,
-        num_workers=0,
+        num_workers=8,
         shuffle=True
     )
 
@@ -92,7 +92,7 @@ def get_dataloader(batch_size, root, split_size=0.75):
     return train_loader, val_loader
 
 
-def main(batch_size, root, lr, load, load_epoch, train, testing):
+def main(batch_size, root, lr, load_epoch, train, testing):
     # Get the train and validation data loaders
     train_loader, test_loader = get_dataloader(batch_size, root)
 
@@ -101,14 +101,15 @@ def main(batch_size, root, lr, load, load_epoch, train, testing):
     print('--- GPUS: {} ---'.format(str(gpus)))
 
     # Build the model to run
-    #se_resnet = nn.DataParallel(se_resnet_custom(num_classes=3), device_ids=gpus)
-    se_resnet = se_resnet_custom(num_classes=3)#, device_ids=gpus)
+    se_resnet = nn.DataParallel(se_resnet_custom(num_classes=3), device_ids=gpus)
+    #se_resnet = se_resnet_custom(num_classes=3)#, device_ids=gpus)
     #se_resnet = se_resnet20(num_classes=23)#, device_ids=torch.device("cpu"))
 
     if load_epoch > 0:
       details = torch.load("models/v6/model_epoch_{}.pth".format(str(load_epoch)))
       #new_details = dict([(k[7:], v) for k, v in details['weight'].items()])
-      se_resnet.load_state_dict(details['weight'])
+      new_details = dict([("module."+k, v) for k, v in details['weight'].items()])
+      se_resnet.load_state_dict(new_details)
 
     # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
     optimizer = optim.Adam(params=se_resnet.parameters(), lr=lr)#, momentum=0.9, weight_decay=1e-4)
@@ -116,7 +117,7 @@ def main(batch_size, root, lr, load, load_epoch, train, testing):
     trainer = Trainer(se_resnet, optimizer, F.cross_entropy, save_dir=".")
 
     if train:
-      trainer.loop(100, train_loader, test_loader, scheduler)
+      trainer.loop(30, train_loader, test_loader, scheduler)
 
     if testing:
       se_resnet.eval()
@@ -137,10 +138,10 @@ if __name__ == '__main__':
 
     p = argparse.ArgumentParser()
     p.add_argument("--root", default='/hdd/trainval/', type=str, help="carnet data root")
-    p.add_argument("--batch_size", default=1, type=int, help="batch size")
+    p.add_argument("--batch_size", default=7, type=int, help="batch size")
     p.add_argument("--lr", default=1e-1, type=float, help="learning rate")
     p.add_argument("--load_epoch", default=18, type=int, help="what epoch to load, -1 for none")
-    p.add_argument("--train", default=False, type=bool, help="whether to train a model")
-    p.add_argument("--test", default=True, type=bool, help="whether to test a model")
+    p.add_argument("--train", default=True, type=bool, help="whether to train a model")
+    p.add_argument("--test", default=False, type=bool, help="whether to test a model")
     args = p.parse_args()
-    main(args.batch_size, args.root, args.lr, args.load, args.load_epoch, args.train, args.test)
+    main(args.batch_size, args.root, args.lr, args.load_epoch, args.train, args.test)
