@@ -106,7 +106,7 @@ def main(batch_size, root, lr, load, load_epoch, train, testing):
     #se_resnet = se_resnet20(num_classes=23)#, device_ids=torch.device("cpu"))
 
     if load:
-      details = torch.load("model_epoch_{}.pth".format(str(load_epoch)))
+      details = torch.load("models/v6/model_epoch_{}.pth".format(str(load_epoch)))
       #new_details = dict([(k[7:], v) for k, v in details['weight'].items()])
       se_resnet.load_state_dict(details['weight'])
 
@@ -127,6 +127,7 @@ def main(batch_size, root, lr, load, load_epoch, train, testing):
         for name, val in outputs:
           mod_name = name[0].split('/')[3] + '/' + name[0].split('/')[4].split('_')[0]
           mod_val = int(val) #list_mapping[int(val)+1][-1]
+          print(mod_name + ',' + str(mod_val) + '\n')
           sub.write(mod_name + ',' + str(mod_val) + '\n')
       print('done!')
 
@@ -136,11 +137,11 @@ if __name__ == '__main__':
 
     p = argparse.ArgumentParser()
     p.add_argument("--root", default='/hdd/trainval/', type=str, help="carnet data root")
-    p.add_argument("--batch_size", default=2, type=int, help="batch size")
-    p.add_argument("--lr", default=1e-3, type=float, help="learning rate")
+    p.add_argument("--batch_size", default=1, type=int, help="batch size")
+    p.add_argument("--lr", default=1e-2, type=float, help="learning rate")
     p.add_argument("--load", default=False, type=bool, help="whether to load a model")
-    p.add_argument("--load_epoch", default=1, type=int, help="what epoch to load")
-    p.add_argument("--train", default=True, type=bool, help="whether to train a model")
-    p.add_argument("--test", default=False, type=bool, help="whether to test a model")
+    p.add_argument("--load_epoch", default=18, type=int, help="what epoch to load")
+    p.add_argument("--train", default=False, type=bool, help="whether to train a model")
+    p.add_argument("--test", default=True, type=bool, help="whether to test a model")
     args = p.parse_args()
     main(args.batch_size, args.root, args.lr, args.load, args.load_epoch, args.train, args.test)
