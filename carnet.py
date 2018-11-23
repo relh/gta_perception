@@ -112,7 +112,7 @@ def main(batch_size, root, lr, load_epoch, train, testing):
       se_resnet.load_state_dict(new_details)
 
     # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
-    optimizer = optim.Adam(params=se_resnet.parameters(), lr=lr)#, momentum=0.9, weight_decay=1e-4)
+    optimizer = optim.Adam(params=se_resnet.parameters(), lr=lr, weight_decay=1e-3)
     scheduler = optim.lr_scheduler.StepLR(optimizer, 30, gamma=0.1)
     trainer = Trainer(se_resnet, optimizer, F.cross_entropy, save_dir=".")
 
