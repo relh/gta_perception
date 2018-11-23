@@ -6,7 +6,7 @@ z = str(3.6114)
 root = '/hdd/test/'
 
 with open('submission.csv', 'w') as sub:
-  sub.write('guid/image,label\n')
+  sub.write('guid/image/axis,value\n')
   for f in os.listdir(root):
       if os.path.isdir(os.path.join(root,f)):  
           for ff in os.listdir(os.path.join(root, f)):
