@@ -35,7 +35,7 @@ class Trainer(object):
                 loss.backward()
                 self.optimizer.step()
             if i % 100 == 0:
-              print("{} epoch {}: \t itr {:<5}/ {} \t loss {:.2f} \t accuracy {:.3f} \t it/s {:.2f} \t lr {:.3f}"\
+              print("{} epoch {}: \t itr {:<5}/ {} \t loss {:.2f} \t accuracy {:.3f} \t it/s {:.1f} \t lr {:.1f}"\
                   .format('TRAIN' if is_train else 'TEST', self.epoch, i, len(data_loader), loss.data.item(), sum(accuracy) / ((i+1)*7), 1.0, 1.0))
 
         mode = "train" if is_train else "test"
@@ -54,16 +54,16 @@ class Trainer(object):
         self.model.eval()
         with torch.no_grad():
             loss, correct, outputs = self._iteration(data_loader, is_train=False)
-        return outputs
+        return outputs, loss
 
     def loop(self, epochs, train_data, test_data, scheduler=None):
         for ep in range(1, epochs + 1):
             self.epoch = ep
-            if scheduler is not None:
-                scheduler.step()
             print("epochs: {}".format(ep))
             self.train(train_data)
-            self.test(test_data)
+            _, loss = self.test(test_data)
+            if scheduler is not None:
+                scheduler.step(loss)
             if ep % self.save_freq:
                 self.save(ep)
 
