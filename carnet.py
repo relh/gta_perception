@@ -74,7 +74,16 @@ def get_dataloader(batch_size, root, split_size=0.75):
     #to_normalized_tensor = transforms.Compose([transforms.ToTensor()])#,
     #transforms.Normalize(mean=[92.458, 91.290, 88.659], std=[35.646, 33.245, 31.304])])
     #transforms.CenterCrop(1024)
-    data_augmentation = transforms.Compose([transforms.RandomResizedCrop(1024), transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize(mean=[.362, .358, .347], std=[.139, .130, .123])])
+    # data_augmentation = transforms.Compose([transforms.RandomResizedCrop(256), transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize(mean=[.362, .358, .347], std=[.139, .130, .123])])
+    data_augmentation = transforms.Compose([
+        # transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1),
+        transforms.Resize([256,256]),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor()
+        # ,
+        # transforms.Normalize(mean=[.362, .358, .347], std=[.139, .130, .123])
+        ])
+
     val_step = 4
 
     # Create the datasets
@@ -122,7 +131,7 @@ def main(batch_size, root, lr, load_dir, load_epoch, train, testing):
 
     if testing:
       se_resnet.eval()
-      t_l_1, t_l_2 = get_dataloader(batch_size, '/hdd/test/', 1.0)
+      t_l_1, t_l_2 = get_dataloader(batch_size, './subtest/', 1.0)
       outputs, _ = trainer.test(t_l_1)
       with open('submission.csv', 'w') as sub:
         sub.write('guid/image,label\n')
@@ -138,11 +147,11 @@ if __name__ == '__main__':
     import argparse
 
     p = argparse.ArgumentParser()
-    p.add_argument("--root", default='/hdd/trainval/', type=str, help="carnet data root")
-    p.add_argument("--batch_size", default=7, type=int, help="batch size")
+    p.add_argument("--root", default='./subtrainval/', type=str, help="carnet data root")
+    p.add_argument("--batch_size", default=1, type=int, help="batch size")
     p.add_argument("--lr", default=1e-1, type=float, help="learning rate")
     p.add_argument("--load_dir", default='models/v8/', type=str, help="what model version to load")
-    p.add_argument("--load_epoch", default=3, type=int, help="what epoch to load, -1 for none")
+    p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--train", default=True, type=bool, help="whether to train a model")
     p.add_argument("--test", default=False, type=bool, help="whether to test a model")
     args = p.parse_args()

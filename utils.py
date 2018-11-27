@@ -1,6 +1,6 @@
 from pathlib import Path
 import torch
-
+from torchvision import utils
 from tqdm import tqdm
 
 
@@ -26,6 +26,7 @@ class Trainer(object):
             if self.cuda:
                 data, target = data.cuda(), target.cuda()
             output = self.model(data)
+            utils.save_image(data[0],'test4.jpg')
             #outputs.append((path, int(output.data.max(1)[1])))
             loss = self.loss_f(output, target)
             loop_loss.append(loss.data.item() / len(data_loader))
