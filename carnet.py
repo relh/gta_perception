@@ -1,100 +1,106 @@
-import os
-import numpy as np
-import pickle
 import csv
-import numpy as np
-from skimage import io
-from pdb import set_trace
-from PIL import Image
+import os
+import pickle
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+from PIL import Image
+from skimage import io
 from torch import nn
+from torch.utils.data import DataLoader, Dataset, random_split
 from torchvision import datasets, transforms
-from torch.utils.data import Dataset, DataLoader, random_split 
 
 from se_resnet import se_resnet_custom
-from utils import Trainer
+from utils import Runner 
 
-def get_all_image_label_pairs(root):
+
+def build_image_label_pairs(folders, data_path):
+    # Loads the CSV for converting 23 classes to 3 classes
     with open('classes.csv', 'r') as class_key:
       reader = csv.reader(class_key)
       list_mapping = list(reader)
 
-    item = []
-    for f in os.listdir(root):
-        if os.path.isdir(os.path.join(root,f)):  
-            for ff in os.listdir(os.path.join(root, f)):
-                if ".jpg" in ff:
-                    base = ff.split('_')[0]
-                    if os.path.exists(os.path.join(root,f,base+'_bbox.bin')):
-                      bbox_cols = np.fromfile(os.path.join(root,f,base+'_bbox.bin'), dtype=np.float32)
-                    else:
-                      bbox_cols = [0]*10
+    image_label_pairs = []
+    # Iterate over the chosen folders
+    for folder in folders:
+        for file_name in os.listdir(os.path.join(data_path, folder)):
+            if ".jpg" in file_name:
+                # Get the ID for the image
+                key_id = file_name.split('_')[0]
 
-                    # Append items to dataset
-                    mod_val = int(list_mapping[int(bbox_cols[9])+1][-1])
-                    item.append((os.path.join(root,f,ff), mod_val))
+                # Check that the label exist
+                if os.path.exists(os.path.join(data_path,file_name,key_id+'_bbox.bin')):
+                  label_data = np.fromfile(os.path.join(data_path,file_name,key_id+'_bbox.bin'), dtype=np.float32)
+                else:
+                  label_data = [0]*10 # Doesn't exist, must be test, set to 0
 
-                    # Commented out code for having the bounding box be the label
-                    # Each row contains information of a bounding box: rotation vector, position (centroid x, y, z), size of the bounding box (length, width, height)
-                    #item.append((os.path.join(root,f,ff), bbox_cols[0:9]))
-    return item 
+                # Append items to dataset
+                class_label = int(list_mapping[int(label_data[9])+1][-1])
+                image_label_pairs.append((os.path.join(data_path,folder,file_name), class_label))
+    return image_label_pairs 
 
     
 class CarDataset(Dataset):
-    def __init__(self, item_names, transform):
-        """This Dataset takes in a folder root, the frequency with which to include samples in validation, and a flag for validation."""
-        self.item_names = item_names
-        self.transform = transform
+    def __init__(self, image_label_pairs, transforms):
+        """This Dataset takes in a folder data_path, the frequency with which to include samples in validation, and a flag for validation."""
+        self.image_label_pairs = image_label_pairs 
+        self.transforms = transforms
         
     def __getitem__(self, index):
-        im_path, im_class = self.item_names[index]
-        #loaded_im = io.imread(im_path)
-        loaded_im = Image.open(im_path)
-        trans_im = self.transform(loaded_im)
-        trans_im.permute(2,0,1) 
-        return im_path, torch.tensor(trans_im).float(), torch.from_numpy(np.array(im_class)).long()
+        im_path, im_class = self.image_label_pairs[index]
+        image_obj = Image.open(im_path) # Open image
+        transformed_image = self.transform(image_obj) # Apply transformations
+        transformed_image.permute(2,0,1) # Swap color channels
+        return im_path,
+               torch.tensor(transformed_image).float(),
+               torch.from_numpy(np.array(im_class)).long()
 
     def __len__(self):
-        return len(self.item_names)
+        return len(self.image_label_pairs)
 
 
-def _get_dataloader(batch_size, dataset):
+def make_dataloader(folder_names, data_path, batch_size):
+    # Declare the transforms
+    preprocessing_transforms = transforms.Compose([transforms.RandomResizedCrop(1024),
+                                            transforms.RandomHorizontalFlip(),
+                                            transforms.ToTensor(),
+                                            transforms.Normalize(mean=[.362, .358, .347],
+                                                                 std=[.139, .130, .123])])
+
+    # Create the datasets
+    pairs = build_image_label_pairs(folder_names, data_path)
+    dataset = CarDataset(pairs, preprocessing_transforms)
+
+    # Create the dataloaders
     return DataLoader(
         dataset,
-        batch_size=batch_size,
+        batch_size=args.batch_size,
         num_workers=8,
         shuffle=True
     )
 
 
-def get_dataloader(batch_size, root, split_size=0.75):
-    #to_normalized_tensor = transforms.Compose([transforms.ToTensor()])#,
-    #transforms.Normalize(mean=[92.458, 91.290, 88.659], std=[35.646, 33.245, 31.304])])
-    #transforms.CenterCrop(1024)
-    data_augmentation = transforms.Compose([transforms.RandomResizedCrop(1024), transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize(mean=[.362, .358, .347], std=[.139, .130, .123])])
-    val_step = 4
+#def main(batch_size, data_path, lr, load_dir, load_epoch, train, testing):
+def main(args):
+    # List the trainval folders
+    trainval_folder_names = [x for x in os.listdir(args.trainval_data_path)
+                    if os.path.isdir(os.path.join(args.trainval_data_path, x))]
 
-    # Create the datasets
-    item_names = get_all_image_label_pairs(root)
-    carData = CarDataset(item_names, data_augmentation)
-    train_len = int(len(carData) * split_size)
-    val_len = len(carData) - train_len 
-    print("--- Train Length: {} ---".format(train_len))
-    print("--- Val Length: {} ---".format(val_len))
-    train_carData, val_carData = random_split(carData, (train_len, val_len))
+    # Figure out how many folders to use for training and validation
+    num_train_folders = int(len(trainval_folder_names) * args.trainval_split_percentage)
+    #num_val_folders = len(trainval_folder_names) - num_train_folders
+    print("--- Number of train folders: {} ---".format(num_train_folders))
 
-    # Create the dataloaders
-    train_loader = _get_dataloader(batch_size, train_carData)
-    val_loader = _get_dataloader(batch_size, val_carData)
-    return train_loader, val_loader
+    # Choose the training and validation folders
+    random.shuffle(trainval_folder_names) # TODO if loading a model, be careful
+    train_folder_names = trainval_folder_names[:num_train_folders]
+    val_folder_names = trainval_folder_names[num_train_folders:]
 
-
-def main(batch_size, root, lr, load_dir, load_epoch, train, testing):
-    # Get the train and validation data loaders
-    train_loader, test_loader = get_dataloader(batch_size, root)
+    # Make dataloaders
+    train_loader = make_dataloader(train_folder_names, args.trainval_data_path, args.batch_size)
+    val_loader = make_dataloader(val_folder_names, args.trainval_data_path, args.batch_size)
 
     # Specify the GPUs to use
     gpus = list(range(torch.cuda.device_count()))
@@ -102,48 +108,70 @@ def main(batch_size, root, lr, load_dir, load_epoch, train, testing):
 
     # Build the model to run
     se_resnet = nn.DataParallel(se_resnet_custom(num_classes=3), device_ids=gpus)
-    #se_resnet = se_resnet_custom(num_classes=3)#, device_ids=gpus)
-    #se_resnet = se_resnet20(num_classes=23)#, device_ids=torch.device("cpu"))
 
-    if load_epoch > 0:
-      details = torch.load(load_dir + "/model_epoch_{}.pth".format(str(load_epoch)))
+    # Load an existing model, be careful with train/validation
+    if args.load_epoch > 0:
+      details = torch.load(args.load_dir + "/model_epoch_{}.pth".format(str(args.load_epoch)))
+
+      # Saving models can be weird, so be careful using these
       #new_details = dict([(k[7:], v) for k, v in details['weight'].items()])
       #new_details = dict([("module."+k, v) for k, v in details['weight'].items()])
       new_details = dict([(k, v) for k, v in details['weight'].items()])
       se_resnet.load_state_dict(new_details)
 
     # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
-    optimizer = optim.Adam(params=se_resnet.parameters(), lr=lr, weight_decay=1e-4)
+    optimizer = optim.Adam(params=se_resnet.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer)#, 30, gamma=0.1)
-    trainer = Trainer(se_resnet, optimizer, F.cross_entropy, save_dir=".")
 
-    if train:
-      trainer.loop(30, train_loader, test_loader, scheduler)
+    # This trainer class does all the work
+    runner = Runner(se_resnet, optimizer, F.cross_entropy, save_dir=".")
+    if args.train:
+      runner.loop(args.num_epoch, train_loader, val_loader, scheduler)
 
-    if testing:
-      se_resnet.eval()
-      t_l_1, t_l_2 = get_dataloader(batch_size, '/hdd/test/', 1.0)
-      outputs, _ = trainer.test(t_l_1)
-      with open('submission.csv', 'w') as sub:
-        sub.write('guid/image,label\n')
-        for name, val in outputs:
-          mod_name = name[0].split('/')[3] + '/' + name[0].split('/')[4].split('_')[0]
-          mod_val = int(val) #list_mapping[int(val)+1][-1]
-          print(mod_name + ',' + str(mod_val) + '\n')
-          sub.write(mod_name + ',' + str(mod_val) + '\n')
-      print('done!')
+    if args.test:
+        # Get test folder names
+        test_folder_names = [x for x in os.listdir(args.test_data_path)
+                        if os.path.isdir(os.path.join(args.test_data_path, x))]
+        
+        # Switch to eval mode
+        se_resnet.eval()
+
+        # Make test dataloader
+        test_loader = make_dataloader(test_folder_names, args.test_data_path, 1)
+
+        # Run the dataloader through the neural network
+        outputs, _ = runner.test(t_l_1)
+
+        # Write the submission to CSV
+        with open('submission_task1.csv', 'w') as sub:
+            sub.write('guid/image,label\n')
+            for name, val in outputs:
+                # Build path
+                mod_name = name[0].split('/')[3] + '/' + name[0].split('/')[4].split('_')[0]
+                mod_val = int(val)
+
+                # Print and write row
+                print(mod_name + ',' + str(mod_val) + '\n')
+                sub.write(mod_name + ',' + str(mod_val) + '\n')
+        print('Done!')
 
 
 if __name__ == '__main__':
     import argparse
 
     p = argparse.ArgumentParser()
-    p.add_argument("--root", default='/hdd/trainval/', type=str, help="carnet data root")
+    p.add_argument("--trainval_data_path", default='/hdd/trainval/', type=str, help="carnet trainval data_path")
+    p.add_argument("--test_data_path", default='/hdd/test/', type=str, help="carnet test data_path")
+    p.add_argument("--trainval_split_percentage", default=0.85, type=float, help="percentage of data to use in training")
+
     p.add_argument("--batch_size", default=7, type=int, help="batch size")
     p.add_argument("--lr", default=1e-1, type=float, help="learning rate")
-    p.add_argument("--load_dir", default='models/v8/', type=str, help="what model version to load")
+    p.add_argument("--weight_decay", default=1e-5, type=float, help="weight decay")
+
+    p.add_argument("--load_dir", default='models/v11/', type=str, help="what model version to load")
     p.add_argument("--load_epoch", default=3, type=int, help="what epoch to load, -1 for none")
+    p.add_argument("--num_epoch", default=300, type=int, help="number of epochs to train")
     p.add_argument("--train", default=True, type=bool, help="whether to train a model")
     p.add_argument("--test", default=False, type=bool, help="whether to test a model")
     args = p.parse_args()
-    main(args.batch_size, args.root, args.lr, args.load_dir, args.load_epoch, args.train, args.test)
+    main(args)

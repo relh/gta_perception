@@ -4,7 +4,7 @@ import torch
 from tqdm import tqdm
 
 
-class Trainer(object):
+class Runner(object):
     cuda = torch.cuda.is_available()
     torch.backends.cudnn.benchmark = True
 
