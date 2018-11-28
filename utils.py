@@ -35,7 +35,8 @@ class Runner(object):
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-        print("{} epoch {}: itr {:<5}/ {} \t loss {:.2f} \t accuracy {:.3f} \t it/s {:.1f} \t lr {:.1f}".format('TRAIN' if is_train else 'TEST', self.epoch, i, len(data_loader), loss.data.item(), sum(accuracy) / ((i+1)*7), 1.0, 1.0))
+            if i % 10 == 0:
+              print("{} epoch {}: itr {:<5}/ {} \t loss {:.2f} \t accuracy {:.3f} \t it/s {:.1f} \t lr {:.1f}".format('TRAIN' if is_train else 'TEST', self.epoch, i, len(data_loader), loss.data.item(), sum(accuracy) / ((i+1)*7), 1.0, 1.0))
 
         mode = "train" if is_train else "test"
         print(f">>>[{mode}] loss: {sum(loop_loss):.2f}/accuracy: {sum(accuracy) / len(data_loader.dataset):.2%}")
