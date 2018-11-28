@@ -1,6 +1,7 @@
 import csv
 import os
 import pickle
+import random
 
 import numpy as np
 import torch
@@ -51,7 +52,7 @@ class CarDataset(Dataset):
     def __getitem__(self, index):
         im_path, im_class = self.image_label_pairs[index]
         image_obj = Image.open(im_path) # Open image
-        transformed_image = self.transform(image_obj) # Apply transformations
+        transformed_image = self.transforms(image_obj) # Apply transformations
         transformed_image.permute(2,0,1) # Swap color channels
         return (im_path,
                torch.tensor(transformed_image).float(),
@@ -151,7 +152,7 @@ def main(args):
                 mod_val = int(val)
 
                 # Print and write row
-                print(mod_name + ',' + str(mod_val) + '\n')
+                print(mod_name + ',' + str(mod_val))
                 sub.write(mod_name + ',' + str(mod_val) + '\n')
         print('Done!')
 
