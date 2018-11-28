@@ -18,7 +18,7 @@ class Runner(object):
         self.save_freq = save_freq
         self.epoch = 0
 
-    def _iteration(self, data_loader, is_train=True):
+    def _iteration(self, data_loader, batch_size=1, is_train=True):
         loop_loss = []
         accuracy = []
         outputs = []
@@ -26,8 +26,11 @@ class Runner(object):
             if self.cuda:
                 data, target = data.cuda(), target.cuda()
             output = self.model(data)
-            #if not is_train and batch_size == 1:
-            #outputs.append((path, int(output.data.max(1)[1])))
+
+            # Testing is with batch_size 1
+            if not is_train and batch_size == 1:
+                outputs.append((path, int(output.data.max(1)[1])))
+
             loss = self.loss_f(output, target)
             loop_loss.append(loss.data.item() / len(data_loader))
             accuracy.append((output.data.max(1)[1] == target.data).sum().item())
@@ -45,23 +48,23 @@ class Runner(object):
         else:
           return loop_loss, accuracy, outputs
 
-    def train(self, data_loader):
+    def train(self, data_loader, batch_size):
         self.model.train()
         with torch.enable_grad():
-            loss, correct, _ = self._iteration(data_loader)
+            loss, correct, _ = self._iteration(data_loader, batch_size)
 
-    def test(self, data_loader):
+    def test(self, data_loader, batch_size):
         self.model.eval()
         with torch.no_grad():
-            loss, correct, outputs = self._iteration(data_loader, is_train=False)
+            loss, correct, outputs = self._iteration(data_loader, batch_size, is_train=False)
         return outputs, loss
 
-    def loop(self, epochs, train_data, test_data, scheduler=None):
+    def loop(self, epochs, train_data, test_data, scheduler=None, batch_size=1):
         for ep in range(1, epochs + 1):
             self.epoch = ep
             print("epochs: {}".format(ep))
-            self.train(train_data)
-            _, loss = self.test(test_data)
+            self.train(train_data, batch_size)
+            _, loss = self.test(test_data, batch_size)
             if scheduler is not None:
                 scheduler.step(sum(loss))
             if ep % self.save_freq:

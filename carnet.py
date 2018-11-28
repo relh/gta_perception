@@ -127,7 +127,7 @@ def main(args):
     # This trainer class does all the work
     runner = Runner(se_resnet, optimizer, F.cross_entropy, save_dir=".")
     if args.train:
-      runner.loop(args.num_epoch, train_loader, val_loader, scheduler)
+      runner.loop(args.num_epoch, train_loader, val_loader, scheduler, args.batch_size)
 
     if args.test:
         # Get test folder names
@@ -141,7 +141,7 @@ def main(args):
         test_loader = make_dataloader(test_folder_names, args.test_data_path, 1)
 
         # Run the dataloader through the neural network
-        outputs, _ = runner.test(t_l_1)
+        outputs, _ = runner.test(test_loader, 1)
 
         # Write the submission to CSV
         with open('submission_task1.csv', 'w') as sub:
