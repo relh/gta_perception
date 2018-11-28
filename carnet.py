@@ -53,9 +53,9 @@ class CarDataset(Dataset):
         image_obj = Image.open(im_path) # Open image
         transformed_image = self.transform(image_obj) # Apply transformations
         transformed_image.permute(2,0,1) # Swap color channels
-        return im_path,
+        return (im_path,
                torch.tensor(transformed_image).float(),
-               torch.from_numpy(np.array(im_class)).long()
+               torch.from_numpy(np.array(im_class)).long())
 
     def __len__(self):
         return len(self.image_label_pairs)
