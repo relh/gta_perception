@@ -72,7 +72,7 @@ def make_dataloader(folder_names, data_path, batch_size):
 
     # Declare the transforms
     preprocessing_transforms = transforms.Compose(
-                                  [transforms.RandomResizedCrop(128),
+                                  [transforms.Resize(384),
                                     transforms.ColorJitter(brightness=0.2,
                                                            contrast=0.2,
                                                            saturation=0.2,
@@ -95,7 +95,7 @@ def make_dataloader(folder_names, data_path, batch_size):
     return DataLoader(
         dataset,
         batch_size=batch_size,
-        num_workers=32,
+        num_workers=16,
         shuffle=True
     )
 
@@ -201,14 +201,14 @@ if __name__ == '__main__':
     p.add_argument("--test_data_path", default='/hdd/test/', type=str, help="carnet test data_path")
     p.add_argument("--trainval_split_percentage", default=0.80, type=float, help="percentage of data to use in training")
 
-    p.add_argument("--batch_size", default=100, type=int, help="batch size")
-    p.add_argument("--lr", default=1e-1, type=float, help="learning rate")
-    p.add_argument("--weight_decay", default=1e-3, type=float, help="weight decay")
+    p.add_argument("--batch_size", default=16, type=int, help="batch size")
+    p.add_argument("--lr", default=1e-3, type=float, help="learning rate")
+    p.add_argument("--weight_decay", default=1e-4, type=float, help="weight decay")
 
-    p.add_argument("--load_dir", default='models/v16', type=str, help="what model version to load")
+    p.add_argument("--load_dir", default='models/v18', type=str, help="what model version to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=300, type=int, help="number of epochs to train")
     p.add_argument("--train", default=True, type=bool, help="whether to train a model")
-    p.add_argument("--test", default=False, type=bool, help="whether to test a model")
+    p.add_argument("--test", default=True, type=bool, help="whether to test a model")
     args = p.parse_args()
     main(args)
