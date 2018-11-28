@@ -142,11 +142,11 @@ class CifarSEBasicBlock(nn.Module):
     def __init__(self, inplanes, planes, stride=1, reduction=16):
         super(CifarSEBasicBlock, self).__init__()
         self.conv1 = conv3x3(inplanes, planes, stride)
-        self.d1 = nn.Dropout(p=0.6)
+        self.d1 = nn.Dropout(p=0.4)
         self.bn1 = nn.BatchNorm2d(planes)
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv3x3(planes, planes)
-        self.d2 = nn.Dropout(p=0.6)
+        self.d2 = nn.Dropout(p=0.4)
         self.bn2 = nn.BatchNorm2d(planes)
         self.se = SELayer(planes, reduction)
         if inplanes != planes:
@@ -253,7 +253,7 @@ def se_resnet_custom(**kwargs):
     """Constructs a ResNet-24 model.
 
     """
-    model = CifarSEResNet(CifarSEBasicBlock, 2, **kwargs)
+    model = CifarSEResNet(CifarSEBasicBlock, 6, **kwargs)
     return model
 
 
