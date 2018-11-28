@@ -35,8 +35,8 @@ def build_image_label_pairs(folders, data_path):
                 key_id = file_name.split('_')[0]
 
                 # Check that the label exist
-                if os.path.exists(os.path.join(data_path,file_name,key_id+'_bbox.bin')):
-                  label_data = np.fromfile(os.path.join(data_path,file_name,key_id+'_bbox.bin'), dtype=np.float32)
+                if os.path.exists(os.path.join(data_path,folder,key_id+'_bbox.bin')):
+                  label_data = np.fromfile(os.path.join(data_path,folder,key_id+'_bbox.bin'), dtype=np.float32)
                 else:
                   label_data = [0]*10 # Doesn't exist, must be test, set to 0
 
@@ -172,7 +172,7 @@ def main(args):
             sub.write('guid/image,label\n')
             for name, val in outputs:
                 # Build path
-                mod_name = name[0].split('/')[3] + '/' + name[0].split('/')[4].split('_')[0]
+                mod_name = name.split('/')[3] + '/' + name.split('/')[4].split('_')[0]
                 mod_val = int(val)
 
                 # Print and write row
@@ -195,10 +195,10 @@ if __name__ == '__main__':
     p.add_argument("--lr", default=1e-1, type=float, help="learning rate")
     p.add_argument("--weight_decay", default=1e-5, type=float, help="weight decay")
 
-    p.add_argument("--load_dir", default='./', type=str, help="what model version to load")
-    p.add_argument("--load_epoch", default=1, type=int, help="what epoch to load, -1 for none")
+    p.add_argument("--load_dir", default='models/v14', type=str, help="what model version to load")
+    p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=300, type=int, help="number of epochs to train")
-    p.add_argument("--train", default=False, type=bool, help="whether to train a model")
-    p.add_argument("--test", default=True, type=bool, help="whether to test a model")
+    p.add_argument("--train", default=True, type=bool, help="whether to train a model")
+    p.add_argument("--test", default=False, type=bool, help="whether to test a model")
     args = p.parse_args()
     main(args)
