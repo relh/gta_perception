@@ -26,6 +26,7 @@ class Trainer(object):
             if self.cuda:
                 data, target = data.cuda(), target.cuda()
             output = self.model(data)
+            #if not is_train and batch_size == 1:
             #outputs.append((path, int(output.data.max(1)[1])))
             loss = self.loss_f(output, target)
             loop_loss.append(loss.data.item() / len(data_loader))
@@ -34,9 +35,7 @@ class Trainer(object):
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-            if i % 100 == 0:
-              print("{} epoch {}: \t itr {:<5}/ {} \t loss {:.2f} \t accuracy {:.3f} \t it/s {:.1f} \t lr {:.1f}"\
-                  .format('TRAIN' if is_train else 'TEST', self.epoch, i, len(data_loader), loss.data.item(), sum(accuracy) / ((i+1)*7), 1.0, 1.0))
+        print("{} epoch {}: itr {:<5}/ {} \t loss {:.2f} \t accuracy {:.3f} \t it/s {:.1f} \t lr {:.1f}".format('TRAIN' if is_train else 'TEST', self.epoch, i, len(data_loader), loss.data.item(), sum(accuracy) / ((i+1)*7), 1.0, 1.0))
 
         mode = "train" if is_train else "test"
         print(f">>>[{mode}] loss: {sum(loop_loss):.2f}/accuracy: {sum(accuracy) / len(data_loader.dataset):.2%}")
@@ -63,7 +62,7 @@ class Trainer(object):
             self.train(train_data)
             _, loss = self.test(test_data)
             if scheduler is not None:
-                scheduler.step(loss)
+                scheduler.step(sum(loss))
             if ep % self.save_freq:
                 self.save(ep)
 
