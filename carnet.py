@@ -84,8 +84,8 @@ def make_dataloader(folder_names, data_path, batch_size):
     # Create the dataloaders
     return DataLoader(
         dataset,
-        batch_size=args.batch_size,
-        num_workers=32,
+        batch_size=batch_size,
+        num_workers=4,
         shuffle=True
     )
 
@@ -160,11 +160,11 @@ def main(args):
 
         # Make test dataloader
         print("Making test dataloaders...")
-        test_loader = make_dataloader(test_folder_names, args.test_data_path, 1)
+        test_loader = make_dataloader(test_folder_names, args.test_data_path, args.batch_size)
 
         # Run the dataloader through the neural network
         print("Conducting a test...")
-        outputs, _ = runner.test(test_loader, 1)
+        outputs, _ = runner.test(test_loader, args.batch_size)
 
         # Write the submission to CSV
         print("Writing a submission to \"submission_task1.csv\"...")
@@ -195,10 +195,10 @@ if __name__ == '__main__':
     p.add_argument("--lr", default=1e-1, type=float, help="learning rate")
     p.add_argument("--weight_decay", default=1e-5, type=float, help="weight decay")
 
-    p.add_argument("--load_dir", default='models/v11/', type=str, help="what model version to load")
-    p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
+    p.add_argument("--load_dir", default='./', type=str, help="what model version to load")
+    p.add_argument("--load_epoch", default=1, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=300, type=int, help="number of epochs to train")
-    p.add_argument("--train", default=True, type=bool, help="whether to train a model")
-    p.add_argument("--test", default=False, type=bool, help="whether to test a model")
+    p.add_argument("--train", default=False, type=bool, help="whether to train a model")
+    p.add_argument("--test", default=True, type=bool, help="whether to test a model")
     args = p.parse_args()
     main(args)

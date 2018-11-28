@@ -18,7 +18,7 @@ class Runner(object):
         self.save_freq = save_freq
         self.epoch = 0
 
-    def _iteration(self, data_loader, batch_size=1, is_train=True):
+    def _iteration(self, data_loader, batch_size, is_train=True):
         loop_loss = []
         accuracy = []
         outputs = []
@@ -28,8 +28,9 @@ class Runner(object):
             output = self.model(data)
 
             # Testing is with batch_size 1
-            if not is_train and batch_size == 1:
-                outputs.append((path, int(output.data.max(1)[1])))
+            if not is_train:
+                for p in range(len(path)):
+                  outputs.append((path[p], int(output.data.max(1)[1][p])))
 
             loss = self.loss_f(output, target)
             loop_loss.append(loss.data.item() / len(data_loader))
@@ -60,7 +61,7 @@ class Runner(object):
             loss, correct, outputs = self._iteration(data_loader, batch_size, is_train=False)
         return outputs, loss
 
-    def loop(self, epochs, train_data, test_data, scheduler=None, batch_size=1):
+    def loop(self, epochs, train_data, test_data, scheduler, batch_size):
         for ep in range(1, epochs + 1):
             self.epoch = ep
             print("epochs: {}".format(ep))
