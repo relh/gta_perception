@@ -86,6 +86,7 @@ def make_dataloader(folder_names, data_path, batch_size):
 #def main(batch_size, data_path, lr, load_dir, load_epoch, train, testing):
 def main(args):
     # List the trainval folders
+    print("Load trainval data...")
     trainval_folder_names = [x for x in os.listdir(args.trainval_data_path)
                     if os.path.isdir(os.path.join(args.trainval_data_path, x))]
 
@@ -102,7 +103,7 @@ def main(args):
     val_folder_names = trainval_folder_names[num_train_folders:]
 
     # Make dataloaders
-    print("Making dataloaders...")
+    print("Making train and val dataloaders...")
     train_loader = make_dataloader(train_folder_names, args.trainval_data_path, args.batch_size)
     val_loader = make_dataloader(val_folder_names, args.trainval_data_path, args.batch_size)
 
@@ -127,15 +128,19 @@ def main(args):
         se_resnet.load_state_dict(new_details)
 
     # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
+    print("Creating optimizer and scheduler...")
     optimizer = optim.Adam(params=se_resnet.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer)#, 30, gamma=0.1)
 
     # This trainer class does all the work
+    print("Instantiating runner...")
     runner = Runner(se_resnet, optimizer, F.cross_entropy, save_dir=".")
     if args.train:
+        print("Begin training...")
         runner.loop(args.num_epoch, train_loader, val_loader, scheduler, args.batch_size)
 
     if args.test:
+        print("Load test data...")
         # Get test folder names
         test_folder_names = [x for x in os.listdir(args.test_data_path)
                         if os.path.isdir(os.path.join(args.test_data_path, x))]
@@ -144,12 +149,15 @@ def main(args):
         se_resnet.eval()
 
         # Make test dataloader
+        print("Making test dataloaders...")
         test_loader = make_dataloader(test_folder_names, args.test_data_path, 1)
 
         # Run the dataloader through the neural network
+        print("Conducting a test...")
         outputs, _ = runner.test(test_loader, 1)
 
         # Write the submission to CSV
+        print("Writing a submission to \"submission_task1.csv\"...")
         with open('submission_task1.csv', 'w') as sub:
             sub.write('guid/image,label\n')
             for name, val in outputs:
@@ -164,6 +172,7 @@ def main(args):
 
 
 if __name__ == '__main__':
+    print("Parsing arguments...")
     import argparse
 
     p = argparse.ArgumentParser()
