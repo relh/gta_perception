@@ -71,7 +71,7 @@ def make_dataloader(folder_names, data_path, batch_size):
     the root directory of these images, and a batchsize and turns them into a dataloader"""
 
     # Declare the transforms
-    preprocessing_transforms = transforms.Compose([transforms.RandomResizedCrop(1024),
+    preprocessing_transforms = transforms.Compose([transforms.RandomResizedCrop(128),
                                             transforms.RandomHorizontalFlip(),
                                             transforms.ToTensor(),
                                             transforms.Normalize(mean=[.362, .358, .347],
@@ -85,7 +85,7 @@ def make_dataloader(folder_names, data_path, batch_size):
     return DataLoader(
         dataset,
         batch_size=args.batch_size,
-        num_workers=8,
+        num_workers=32,
         shuffle=True
     )
 
@@ -191,7 +191,7 @@ if __name__ == '__main__':
     p.add_argument("--test_data_path", default='/hdd/test/', type=str, help="carnet test data_path")
     p.add_argument("--trainval_split_percentage", default=0.85, type=float, help="percentage of data to use in training")
 
-    p.add_argument("--batch_size", default=7, type=int, help="batch size")
+    p.add_argument("--batch_size", default=256, type=int, help="batch size")
     p.add_argument("--lr", default=1e-1, type=float, help="learning rate")
     p.add_argument("--weight_decay", default=1e-5, type=float, help="weight decay")
 
