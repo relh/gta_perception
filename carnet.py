@@ -18,6 +18,9 @@ from utils import Runner
 
 
 def build_image_label_pairs(folders, data_path):
+    """This function takes in a set of folders and their root path. It returns a list 
+    of tuples of (image paths, class label) where class label is either 0,1,2 as in classes.csv"""
+
     # Loads the CSV for converting 23 classes to 3 classes
     with open('classes.csv', 'r') as class_key:
       reader = csv.reader(class_key)
@@ -45,7 +48,8 @@ def build_image_label_pairs(folders, data_path):
     
 class CarDataset(Dataset):
     def __init__(self, image_label_pairs, transforms):
-        """This Dataset takes in a folder data_path, the frequency with which to include samples in validation, and a flag for validation."""
+        """This Dataset takes in image and label pairs (tuples) and a list of transformations to apply 
+        and returns tuples of (image_path, transformed_image_tensor, label_tensor)"""
         self.image_label_pairs = image_label_pairs 
         self.transforms = transforms
         
@@ -63,6 +67,9 @@ class CarDataset(Dataset):
 
 
 def make_dataloader(folder_names, data_path, batch_size):
+    """This function takes in a list of folders with images in them,
+    the root directory of these images, and a batchsize and turns them into a dataloader"""
+
     # Declare the transforms
     preprocessing_transforms = transforms.Compose([transforms.RandomResizedCrop(1024),
                                             transforms.RandomHorizontalFlip(),
@@ -83,8 +90,11 @@ def make_dataloader(folder_names, data_path, batch_size):
     )
 
 
-#def main(batch_size, data_path, lr, load_dir, load_epoch, train, testing):
 def main(args):
+    """This major function controls finding data, splitting train and validation data, building datasets,
+    building dataloaders, building a model, loading a model, training a model, testing a model, and writing
+    a submission"""
+
     # List the trainval folders
     print("Load trainval data...")
     trainval_folder_names = [x for x in os.listdir(args.trainval_data_path)
@@ -172,6 +182,7 @@ def main(args):
 
 
 if __name__ == '__main__':
+    """This block parses command line arguments and runs the training/testing main block"""
     print("Parsing arguments...")
     import argparse
 
