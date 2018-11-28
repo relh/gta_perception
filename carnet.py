@@ -91,8 +91,10 @@ def main(args):
 
     # Figure out how many folders to use for training and validation
     num_train_folders = int(len(trainval_folder_names) * args.trainval_split_percentage)
-    #num_val_folders = len(trainval_folder_names) - num_train_folders
+    num_val_folders = len(trainval_folder_names) - num_train_folders
+    print("Building dataset split...")
     print("--- Number of train folders: {} ---".format(num_train_folders))
+    print("--- Number of val folders: {} ---".format(num_val_folders))
 
     # Choose the training and validation folders
     random.shuffle(trainval_folder_names) # TODO if loading a model, be careful
@@ -100,25 +102,29 @@ def main(args):
     val_folder_names = trainval_folder_names[num_train_folders:]
 
     # Make dataloaders
+    print("Making dataloaders...")
     train_loader = make_dataloader(train_folder_names, args.trainval_data_path, args.batch_size)
     val_loader = make_dataloader(val_folder_names, args.trainval_data_path, args.batch_size)
 
     # Specify the GPUs to use
+    print("Finding GPUs...")
     gpus = list(range(torch.cuda.device_count()))
     print('--- GPUS: {} ---'.format(str(gpus)))
 
     # Build the model to run
+    print("Building a model...")
     se_resnet = nn.DataParallel(se_resnet_custom(num_classes=3), device_ids=gpus)
 
     # Load an existing model, be careful with train/validation
     if args.load_epoch > 0:
-      details = torch.load(args.load_dir + "/model_epoch_{}.pth".format(str(args.load_epoch)))
+        print("Loading a model...")
+        details = torch.load(args.load_dir + "/model_epoch_{}.pth".format(str(args.load_epoch)))
 
-      # Saving models can be weird, so be careful using these
-      #new_details = dict([(k[7:], v) for k, v in details['weight'].items()])
-      #new_details = dict([("module."+k, v) for k, v in details['weight'].items()])
-      new_details = dict([(k, v) for k, v in details['weight'].items()])
-      se_resnet.load_state_dict(new_details)
+        # Saving models can be weird, so be careful using these
+        #new_details = dict([(k[7:], v) for k, v in details['weight'].items()])
+        #new_details = dict([("module."+k, v) for k, v in details['weight'].items()])
+        new_details = dict([(k, v) for k, v in details['weight'].items()])
+        se_resnet.load_state_dict(new_details)
 
     # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
     optimizer = optim.Adam(params=se_resnet.parameters(), lr=args.lr, weight_decay=args.weight_decay)
@@ -127,7 +133,7 @@ def main(args):
     # This trainer class does all the work
     runner = Runner(se_resnet, optimizer, F.cross_entropy, save_dir=".")
     if args.train:
-      runner.loop(args.num_epoch, train_loader, val_loader, scheduler, args.batch_size)
+        runner.loop(args.num_epoch, train_loader, val_loader, scheduler, args.batch_size)
 
     if args.test:
         # Get test folder names
