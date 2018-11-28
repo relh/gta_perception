@@ -71,11 +71,21 @@ def make_dataloader(folder_names, data_path, batch_size):
     the root directory of these images, and a batchsize and turns them into a dataloader"""
 
     # Declare the transforms
-    preprocessing_transforms = transforms.Compose([transforms.RandomResizedCrop(128),
-                                            transforms.RandomHorizontalFlip(),
-                                            transforms.ToTensor(),
-                                            transforms.Normalize(mean=[.362, .358, .347],
-                                                                 std=[.139, .130, .123])])
+    preprocessing_transforms = transforms.Compose(
+                                  [transforms.RandomResizedCrop(128),
+                                    transforms.ColorJitter(brightness=0.2,
+                                                           contrast=0.2,
+                                                           saturation=0.2,
+                                                           hue=0.2),
+                                    transforms.RandomHorizontalFlip(),
+                                    transforms.RandomAffine(15.0,
+                                                            translate=(0.1, 0.1),
+                                                            scale=(0.8,1.2),
+                                                            shear=15.0,
+                                                            fillcolor=0),
+                                    transforms.ToTensor(),
+                                    transforms.Normalize(mean=[.362, .358, .347],
+                                                         std=[.139, .130, .123])])
 
     # Create the datasets
     pairs = build_image_label_pairs(folder_names, data_path)
@@ -193,12 +203,12 @@ if __name__ == '__main__':
 
     p.add_argument("--batch_size", default=256, type=int, help="batch size")
     p.add_argument("--lr", default=1e-1, type=float, help="learning rate")
-    p.add_argument("--weight_decay", default=1e-5, type=float, help="weight decay")
+    p.add_argument("--weight_decay", default=1e-3, type=float, help="weight decay")
 
     p.add_argument("--load_dir", default='models/v14', type=str, help="what model version to load")
-    p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
+    p.add_argument("--load_epoch", default=9, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=300, type=int, help="number of epochs to train")
-    p.add_argument("--train", default=True, type=bool, help="whether to train a model")
-    p.add_argument("--test", default=False, type=bool, help="whether to test a model")
+    p.add_argument("--train", default=False, type=bool, help="whether to train a model")
+    p.add_argument("--test", default=True, type=bool, help="whether to test a model")
     args = p.parse_args()
     main(args)
