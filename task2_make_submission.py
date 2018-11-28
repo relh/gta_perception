@@ -1,5 +1,6 @@
 import os
 
+# The precomputed centroids
 x = str(-.1775)
 y = str(-.2550)
 z = str(3.6114)
