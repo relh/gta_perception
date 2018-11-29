@@ -142,11 +142,9 @@ class CifarSEBasicBlock(nn.Module):
     def __init__(self, inplanes, planes, stride=1, reduction=16):
         super(CifarSEBasicBlock, self).__init__()
         self.conv1 = conv3x3(inplanes, planes, stride)
-        self.d1 = nn.Dropout(p=0.4)
         self.bn1 = nn.BatchNorm2d(planes)
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv3x3(planes, planes)
-        self.d2 = nn.Dropout(p=0.4)
         self.bn2 = nn.BatchNorm2d(planes)
         self.se = SELayer(planes, reduction)
         if inplanes != planes:
@@ -159,12 +157,10 @@ class CifarSEBasicBlock(nn.Module):
     def forward(self, x):
         residual = self.downsample(x)
         out = self.conv1(x)
-        out = self.d1(out)
         out = self.bn1(out)
         out = self.relu(out)
 
         out = self.conv2(out)
-        out = self.d2(out)
         out = self.bn2(out)
         out = self.se(out)
 
@@ -185,6 +181,7 @@ class CifarSEResNet(nn.Module):
         self.layer2 = self._make_layer(block, 32, blocks=n_size, stride=2, reduction=reduction)
         self.layer3 = self._make_layer(block, 64, blocks=n_size, stride=2, reduction=reduction)
         self.avgpool = nn.AdaptiveAvgPool2d(1)
+        self.d1 = nn.Dropout(p=0.6)
         self.fc = nn.Linear(64, num_classes)
         self.initialize()
 
@@ -216,6 +213,7 @@ class CifarSEResNet(nn.Module):
 
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
+        x = self.d1(x)
         x = self.fc(x)
 
         return x
