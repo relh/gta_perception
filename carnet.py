@@ -141,7 +141,7 @@ def main(args):
 
     # Build the model to run
     print("Building a model...")
-    se_resnet = nn.DataParallel(se_resnet_custom(num_classes=23), device_ids=gpus)
+    se_resnet = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks, num_classes=23), device_ids=gpus)
 
     # Load an existing model, be careful with train/validation
     if args.load_epoch > 0:
@@ -210,12 +210,14 @@ if __name__ == '__main__':
     p.add_argument("--test_data_path", default='/hdd/test/', type=str, help="carnet test data_path")
     p.add_argument("--trainval_split_percentage", default=0.80, type=float, help="percentage of data to use in training")
 
-    p.add_argument("--batch_size", default=16, type=int, help="batch size")
+    p.add_argument("--batch_size", default=24, type=int, help="batch size")
+    p.add_argument("--model_num_blocks", default=2, type=int, help="how deep the network is")
+
     p.add_argument("--lr", default=1e-2, type=float, help="learning rate")
     p.add_argument("--weight_decay", default=1e-4, type=float, help="weight decay")
 
-    p.add_argument("--load_dir", default='models/v23', type=str, help="what model version to load")
-    p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
+    p.add_argument("--load_dir", default='models/v24', type=str, help="what model version to load")
+    p.add_argument("--load_epoch", default=8, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=100, type=int, help="number of epochs to train")
     p.add_argument("--train", default=True, type=bool, help="whether to train a model")
     p.add_argument("--test", default=True, type=bool, help="whether to test a model")

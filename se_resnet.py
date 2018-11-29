@@ -247,11 +247,11 @@ def se_resnet20(**kwargs):
     return model
 
 # --- OUR CUSTOM RESNET ---
-def se_resnet_custom(**kwargs):
+def se_resnet_custom(size=2, **kwargs):
     """Constructs a ResNet-24 model.
 
     """
-    model = CifarSEResNet(CifarSEBasicBlock, 4, **kwargs)
+    model = CifarSEResNet(CifarSEBasicBlock, size, **kwargs)
     return model
 
 
