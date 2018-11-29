@@ -17,14 +17,19 @@ from se_resnet import se_resnet_custom
 from utils import Runner 
 
 
+def get_classes_to_label_map():
+    # Loads the CSV for converting 23 classes to 3 classes
+    with open('classes.csv', 'r') as class_key:
+      reader = csv.reader(class_key)
+      list_mapping = list(reader)[1:]
+    return list_mapping
+
+
 def build_image_label_pairs(folders, data_path):
     """This function takes in a set of folders and their root path. It returns a list 
     of tuples of (image paths, class label) where class label is either 0,1,2 as in classes.csv"""
 
-    # Loads the CSV for converting 23 classes to 3 classes
-    with open('classes.csv', 'r') as class_key:
-      reader = csv.reader(class_key)
-      list_mapping = list(reader)
+    list_mapping = get_classes_to_label_map()
 
     image_label_pairs = []
     # Iterate over the chosen folders
@@ -41,7 +46,9 @@ def build_image_label_pairs(folders, data_path):
                   label_data = [0]*10 # Doesn't exist, must be test, set to 0
 
                 # Append items to dataset
-                class_label = int(list_mapping[int(label_data[9])+1][-1])
+                # Index 0 is 23 classes, -1 is 3 classes 
+                class_label = int(list_mapping[int(label_data[9])][0])
+
                 image_label_pairs.append((os.path.join(data_path,folder,file_name), class_label))
     return image_label_pairs 
 
@@ -134,7 +141,7 @@ def main(args):
 
     # Build the model to run
     print("Building a model...")
-    se_resnet = nn.DataParallel(se_resnet_custom(num_classes=3), device_ids=gpus)
+    se_resnet = nn.DataParallel(se_resnet_custom(num_classes=23), device_ids=gpus)
 
     # Load an existing model, be careful with train/validation
     if args.load_epoch > 0:
@@ -176,6 +183,8 @@ def main(args):
         print("Conducting a test...")
         outputs, _ = runner.test(test_loader, args.batch_size)
 
+        list_mapping = get_classes_to_label_map()
+
         # Write the submission to CSV
         print("Writing a submission to \"submission_task1.csv\"...")
         with open('submission_task1.csv', 'w') as sub:
@@ -183,7 +192,7 @@ def main(args):
             for name, val in outputs:
                 # Build path
                 mod_name = name.split('/')[3] + '/' + name.split('/')[4].split('_')[0]
-                mod_val = int(val)
+                mod_val = int(list_mapping[int(val)][-1])
 
                 # Print and write row
                 print(mod_name + ',' + str(mod_val))
@@ -202,12 +211,12 @@ if __name__ == '__main__':
     p.add_argument("--trainval_split_percentage", default=0.80, type=float, help="percentage of data to use in training")
 
     p.add_argument("--batch_size", default=24, type=int, help="batch size")
-    p.add_argument("--lr", default=1e-2, type=float, help="learning rate")
+    p.add_argument("--lr", default=1e-1, type=float, help="learning rate")
     p.add_argument("--weight_decay", default=1e-4, type=float, help="weight decay")
 
-    p.add_argument("--load_dir", default='models/v22', type=str, help="what model version to load")
-    p.add_argument("--load_epoch", default=8, type=int, help="what epoch to load, -1 for none")
-    p.add_argument("--num_epoch", default=300, type=int, help="number of epochs to train")
+    p.add_argument("--load_dir", default='models/v23', type=str, help="what model version to load")
+    p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
+    p.add_argument("--num_epoch", default=100, type=int, help="number of epochs to train")
     p.add_argument("--train", default=True, type=bool, help="whether to train a model")
     p.add_argument("--test", default=True, type=bool, help="whether to test a model")
     args = p.parse_args()

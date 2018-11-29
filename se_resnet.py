@@ -181,7 +181,7 @@ class CifarSEResNet(nn.Module):
         self.layer2 = self._make_layer(block, 32, blocks=n_size, stride=2, reduction=reduction)
         self.layer3 = self._make_layer(block, 64, blocks=n_size, stride=2, reduction=reduction)
         self.avgpool = nn.AdaptiveAvgPool2d(1)
-        self.d1 = nn.Dropout(p=0.6)
+        self.d1 = nn.Dropout(p=0.2)
         self.fc = nn.Linear(64, num_classes)
         self.initialize()
 
