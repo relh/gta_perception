@@ -203,10 +203,10 @@ if __name__ == '__main__':
 
     p.add_argument("--batch_size", default=24, type=int, help="batch size")
     p.add_argument("--lr", default=1e-2, type=float, help="learning rate")
-    p.add_argument("--weight_decay", default=1e-3, type=float, help="weight decay")
+    p.add_argument("--weight_decay", default=1e-4, type=float, help="weight decay")
 
-    p.add_argument("--load_dir", default='models/v19', type=str, help="what model version to load")
-    p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
+    p.add_argument("--load_dir", default='models/v22', type=str, help="what model version to load")
+    p.add_argument("--load_epoch", default=8, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=300, type=int, help="number of epochs to train")
     p.add_argument("--train", default=True, type=bool, help="whether to train a model")
     p.add_argument("--test", default=True, type=bool, help="whether to test a model")

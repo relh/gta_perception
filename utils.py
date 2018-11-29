@@ -53,7 +53,7 @@ class Runner(object):
         print(f">>>[{mode}] loss: {sum(loop_loss):.2f}/accuracy: {sum(accuracy) / len(data_loader.dataset):.2%}")
         if mode == "test":
           with open('test_track.csv', 'a') as f:
-            f.write(f">>>[{mode}] loss: {sum(loop_loss):.2f}/accuracy: {sum(accuracy) / len(data_loader.dataset):.2%}\n")
+            f.write(f">>>[{mode}] epoch: {self.epoch} loss: {sum(loop_loss):.2f}/accuracy: {sum(accuracy) / len(data_loader.dataset):.2%}\n")
         if is_train:
           return loop_loss, accuracy, None
         else:
