@@ -47,7 +47,7 @@ class Runner(object):
 
             if i % 100 == 0:
               print("{} epoch {}: itr {:<5}/ {} \t loss {:.2f} \t accuracy {:.3f} \t batchsize {:.1f} \t lr {:.1f}"
-                    .format('TRAIN' if is_train else 'TEST', self.epoch, i, len(data_loader), loss.data.item(), sum(accuracy) / ((i+1)*batch_size), batch_size, lr))
+                    .format('TRAIN' if is_train else 'TEST', self.epoch, i*batch_size, len(data_loader), loss.data.item(), sum(accuracy) / ((i+1)*batch_size), batch_size, lr))
 
         mode = "train" if is_train else "test"
         print(f">>>[{mode}] loss: {sum(loop_loss):.2f}/accuracy: {sum(accuracy) / len(data_loader.dataset):.2%}")

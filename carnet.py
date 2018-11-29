@@ -210,8 +210,8 @@ if __name__ == '__main__':
     p.add_argument("--test_data_path", default='/hdd/test/', type=str, help="carnet test data_path")
     p.add_argument("--trainval_split_percentage", default=0.80, type=float, help="percentage of data to use in training")
 
-    p.add_argument("--batch_size", default=24, type=int, help="batch size")
-    p.add_argument("--lr", default=1e-1, type=float, help="learning rate")
+    p.add_argument("--batch_size", default=16, type=int, help="batch size")
+    p.add_argument("--lr", default=1e-2, type=float, help="learning rate")
     p.add_argument("--weight_decay", default=1e-4, type=float, help="weight decay")
 
     p.add_argument("--load_dir", default='models/v23', type=str, help="what model version to load")
