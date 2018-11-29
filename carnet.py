@@ -141,7 +141,9 @@ def main(args):
 
     # Build the model to run
     print("Building a model...")
-    se_resnet = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks, num_classes=23), device_ids=gpus)
+    se_resnet = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks,
+                                                 dropout_p=args.dropout_p, num_classes=23),
+                                                 device_ids=gpus)
 
     # Load an existing model, be careful with train/validation
     if args.load_epoch > 0:
@@ -210,11 +212,14 @@ if __name__ == '__main__':
     p.add_argument("--test_data_path", default='/hdd/test/', type=str, help="carnet test data_path")
     p.add_argument("--trainval_split_percentage", default=0.80, type=float, help="percentage of data to use in training")
 
+    # Increasing these adds regularization
     p.add_argument("--batch_size", default=24, type=int, help="batch size")
-    p.add_argument("--model_num_blocks", default=2, type=int, help="how deep the network is")
-
-    p.add_argument("--lr", default=1e-2, type=float, help="learning rate")
+    p.add_argument("--dropout_p", default=0.1, type=float, help="final layer p of neurons to drop")
     p.add_argument("--weight_decay", default=1e-4, type=float, help="weight decay")
+
+    # Increasing this increases model ability 
+    p.add_argument("--model_num_blocks", default=2, type=int, help="how deep the network is")
+    p.add_argument("--lr", default=1e-2, type=float, help="learning rate")
 
     p.add_argument("--load_dir", default='models/v24', type=str, help="what model version to load")
     p.add_argument("--load_epoch", default=8, type=int, help="what epoch to load, -1 for none")

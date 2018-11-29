@@ -171,7 +171,7 @@ class CifarSEBasicBlock(nn.Module):
 
 
 class CifarSEResNet(nn.Module):
-    def __init__(self, block, n_size, num_classes=10, reduction=16):
+    def __init__(self, block, n_size, dropout_p, num_classes=10, reduction=16):
         super(CifarSEResNet, self).__init__()
         self.inplane = 16
         self.conv1 = nn.Conv2d(3, self.inplane, kernel_size=3, stride=1, padding=1, bias=False)
@@ -181,7 +181,7 @@ class CifarSEResNet(nn.Module):
         self.layer2 = self._make_layer(block, 32, blocks=n_size, stride=2, reduction=reduction)
         self.layer3 = self._make_layer(block, 64, blocks=n_size, stride=2, reduction=reduction)
         self.avgpool = nn.AdaptiveAvgPool2d(1)
-        self.d1 = nn.Dropout(p=0.2)
+        self.d1 = nn.Dropout(p=dropout_p)
         self.fc = nn.Linear(64, num_classes)
         self.initialize()
 
@@ -247,11 +247,11 @@ def se_resnet20(**kwargs):
     return model
 
 # --- OUR CUSTOM RESNET ---
-def se_resnet_custom(size=2, **kwargs):
+def se_resnet_custom(size=2, dropout_p=0.1, **kwargs):
     """Constructs a ResNet-24 model.
 
     """
-    model = CifarSEResNet(CifarSEBasicBlock, size, **kwargs)
+    model = CifarSEResNet(CifarSEBasicBlock, size, dropout_p, **kwargs)
     return model
 
 
