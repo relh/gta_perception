@@ -83,6 +83,7 @@ def make_dataloader(folder_names, data_path, batch_size):
                                                             scale=(0.8,1.2),
                                                             shear=15.0,
                                                             fillcolor=0),
+                                    transforms.RandomRotation(degrees=90),
                                     transforms.ToTensor(),
                                     transforms.Normalize(mean=[.362, .358, .347],
                                                          std=[.139, .130, .123])])
