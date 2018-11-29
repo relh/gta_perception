@@ -25,7 +25,7 @@ def get_classes_to_label_map():
     return list_mapping
 
 
-def build_image_label_pairs(folders, data_path):
+def build_image_label_pairs(folders, data_path, task):
     """This function takes in a set of folders and their root path. It returns a list 
     of tuples of (image paths, class label) where class label is either 0,1,2 as in classes.csv"""
 
@@ -46,8 +46,11 @@ def build_image_label_pairs(folders, data_path):
                   label_data = [0]*10 # Doesn't exist, must be test, set to 0
 
                 # Append items to dataset
-                # Index 0 is 23 classes, -1 is 3 classes 
-                class_label = int(list_mapping[int(label_data[9])][0])
+                if task == 1:
+                  # Index 0 is 23 classes, -1 is 3 classes 
+                  class_label = int(list_mapping[int(label_data[9])][0])
+                elif task == 2:
+                  class_label = [int(x) for x in label_data[3:6]]
 
                 image_label_pairs.append((os.path.join(data_path,folder,file_name), class_label))
     return image_label_pairs 
@@ -73,7 +76,7 @@ class CarDataset(Dataset):
         return len(self.image_label_pairs)
 
 
-def make_dataloader(folder_names, data_path, batch_size):
+def make_dataloader(folder_names, data_path, batch_size, task):
     """This function takes in a list of folders with images in them,
     the root directory of these images, and a batchsize and turns them into a dataloader"""
 
@@ -95,7 +98,7 @@ def make_dataloader(folder_names, data_path, batch_size):
                                                          std=[.139, .130, .123])])
 
     # Create the datasets
-    pairs = build_image_label_pairs(folder_names, data_path)
+    pairs = build_image_label_pairs(folder_names, data_path, task)
     dataset = CarDataset(pairs, preprocessing_transforms)
 
     # Create the dataloaders
@@ -131,8 +134,8 @@ def main(args):
 
     # Make dataloaders
     print("Making train and val dataloaders...")
-    train_loader = make_dataloader(train_folder_names, args.trainval_data_path, args.batch_size)
-    val_loader = make_dataloader(val_folder_names, args.trainval_data_path, args.batch_size)
+    train_loader = make_dataloader(train_folder_names, args.trainval_data_path, args.batch_size, args.task)
+    val_loader = make_dataloader(val_folder_names, args.trainval_data_path, args.batch_size, args.task)
 
     # Specify the GPUs to use
     print("Finding GPUs...")
@@ -141,9 +144,15 @@ def main(args):
 
     # Build the model to run
     print("Building a model...")
-    se_resnet = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks,
-                                                 dropout_p=args.dropout_p, num_classes=23),
-                                                 device_ids=gpus)
+    if args.task == 1:
+      se_resnet = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks,
+                                                   dropout_p=args.dropout_p, num_classes=23),
+                                                   device_ids=gpus)
+    elif args.task == 2:
+      se_resnet = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks,
+                                                   dropout_p=args.dropout_p, num_classes=3),
+                                                   device_ids=gpus)
+      # TODO make this use MSE and have 3 heads, one for X,Y,Z
 
     # Load an existing model, be careful with train/validation
     if args.load_epoch > 0:
@@ -226,5 +235,7 @@ if __name__ == '__main__':
     p.add_argument("--num_epoch", default=100, type=int, help="number of epochs to train")
     p.add_argument("--train", default=True, type=bool, help="whether to train a model")
     p.add_argument("--test", default=True, type=bool, help="whether to test a model")
+
+    p.add_argument("--task", default=1, type=int, help="whether to test a model")
     args = p.parse_args()
     main(args)
