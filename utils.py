@@ -47,11 +47,11 @@ class Runner(object):
 
             if i % 100 == 0:
               print("{} epoch {}: itr {:<5}/ {} \t loss {:.2f} \t accuracy {:.3f} \t batchsize {:.1f} \t lr {:.1f}"
-                    .format('TRAIN' if is_train else 'TEST', self.epoch, i*batch_size, len(data_loader)*batch_size, loss.data.item(), sum(accuracy) / ((i+1)*batch_size), batch_size, lr))
+                    .format('TRAIN' if is_train else 'TEST/VAL', self.epoch, i*batch_size, len(data_loader)*batch_size, loss.data.item(), sum(accuracy) / ((i+1)*batch_size), batch_size, lr))
 
-        mode = "train" if is_train else "test"
+        mode = "train" if is_train else "test/val"
         print(f">>>[{mode}] loss: {sum(loop_loss):.2f}/accuracy: {sum(accuracy) / len(data_loader.dataset):.2%}")
-        if mode == "test":
+        if mode == "test/val":
           with open('test_track.csv', 'a') as f:
             f.write(f">>>[{mode}] epoch: {self.epoch} loss: {sum(loop_loss):.2f}/accuracy: {sum(accuracy) / len(data_loader.dataset):.2%}\n")
         if is_train:
