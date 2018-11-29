@@ -71,7 +71,7 @@ def compute_mean_std(loader):
     
 
 if __name__ == "__main__":
-    base = "/hdd/trainval/" # Change this to point to your datapath
+    base = "content/dataset/trainval/" # Change this to point to your datapath
 
     print('--- dataset creator ---')
     item_names = get_all_image_label_pairs(base)
