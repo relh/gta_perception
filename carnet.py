@@ -173,11 +173,11 @@ def main(args):
     # This trainer class does all the work
     print("Instantiating runner...")
     runner = Runner(se_resnet, optimizer, F.cross_entropy, save_dir=args.save_dir)
-    if args.train:
+    if "train" in args.modes.lower():
         print("Begin training...")
         runner.loop(args.num_epoch, train_loader, val_loader, scheduler, args.batch_size)
 
-    if args.test:
+    if "test" in args.modes.lower():
         print("Load test data...")
         # Get test folder names
         test_folder_names = [x for x in os.listdir(args.test_data_path)
@@ -235,8 +235,7 @@ if __name__ == '__main__':
     p.add_argument("--load_dir", default='models/v25', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=100, type=int, help="number of epochs to train")
-    p.add_argument("--train", default=True, type=bool, help="whether to train a model")
-    p.add_argument("--test", default=True, type=bool, help="whether to test a model")
+    p.add_argument("--modes", default="Train|Test", type=str, help="string containing modes")
 
     p.add_argument("--task", default=1, type=int, help="whether to test a model")
     args = p.parse_args()
