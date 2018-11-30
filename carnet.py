@@ -105,7 +105,7 @@ def make_dataloader(folder_names, data_path, batch_size, task):
     return DataLoader(
         dataset,
         batch_size=batch_size,
-        num_workers=24,
+        num_workers=batch_size,
         shuffle=True
     )
 
@@ -223,8 +223,8 @@ if __name__ == '__main__':
     p.add_argument("--trainval_split_percentage", default=0.80, type=float, help="percentage of data to use in training")
 
     # Increasing these adds regularization
-    p.add_argument("--batch_size", default=16, type=int, help="batch size")
-    p.add_argument("--dropout_p", default=0.3, type=float, help="final layer p of neurons to drop")
+    p.add_argument("--batch_size", default=50, type=int, help="batch size")
+    p.add_argument("--dropout_p", default=0.0, type=float, help="final layer p of neurons to drop")
     p.add_argument("--weight_decay", default=1e-3, type=float, help="weight decay")
 
     # Increasing this increases model ability 
