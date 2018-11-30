@@ -231,8 +231,8 @@ if __name__ == '__main__':
     p.add_argument("--model_num_blocks", default=1, type=int, help="how deep the network is")
     p.add_argument("--lr", default=1e-1, type=float, help="learning rate")
 
-    p.add_argument("--save_dir", default='models/v26', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v25', type=str, help="what model dir to load")
+    p.add_argument("--save_dir", default='models/v27', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v27', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=100, type=int, help="number of epochs to train")
     p.add_argument("--modes", default="Train|Test", type=str, help="string containing modes")
