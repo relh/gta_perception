@@ -188,7 +188,7 @@ def main(args):
 
         # Make test dataloader
         print("Making test dataloaders...")
-        test_loader = make_dataloader(test_folder_names, args.test_data_path, args.batch_size)
+        test_loader = make_dataloader(test_folder_names, args.test_data_path, args.batch_size, args.task)
 
         # Run the dataloader through the neural network
         print("Conducting a test...")
@@ -201,6 +201,7 @@ def main(args):
         with open('submission_task1.csv', 'w') as sub:
             sub.write('guid/image,label\n')
             for name, val in outputs:
+                print(val)
                 # Build path
                 mod_name = name.split('/')[3] + '/' + name.split('/')[4].split('_')[0]
                 mod_val = int(list_mapping[int(val)][-1])
@@ -230,8 +231,8 @@ if __name__ == '__main__':
     p.add_argument("--model_num_blocks", default=2, type=int, help="how deep the network is")
     p.add_argument("--lr", default=1e-2, type=float, help="learning rate")
 
-    p.add_argument("--save_dir", default='models/v25', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v24', type=str, help="what model dir to load")
+    p.add_argument("--save_dir", default='models/v24', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v25', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=100, type=int, help="number of epochs to train")
     p.add_argument("--train", default=True, type=bool, help="whether to train a model")

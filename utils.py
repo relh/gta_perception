@@ -22,7 +22,8 @@ class Runner(object):
         loop_loss = []
         accuracy = []
         outputs = []
-        for i, (path, data, target) in enumerate(tqdm(data_loader, ncols=160, disable=True)):
+        pbar = tqdm(data_loader, ncols=40, disable=False)
+        for i, (path, data, target) in enumerate(pbar):
             if self.cuda:
                 data, target = data.cuda(), target.cuda()
             output = self.model(data)
@@ -45,9 +46,10 @@ class Runner(object):
             for param_group in self.optimizer.param_groups:
               lr = param_group['lr']
 
-            if i % 100 == 0:
-              print("{} epoch {}: itr {:<5}/ {} \t loss {:.2f} \t accuracy {:.3f} \t batchsize {:.1f} \t lr {:.1f}"
-                    .format('TRAIN' if is_train else 'TEST/VAL', self.epoch, i*batch_size, len(data_loader)*batch_size, loss.data.item(), sum(accuracy) / ((i+1)*batch_size), batch_size, lr))
+            # Set Progress bar
+            pbar.set_description(
+                "{} epoch {}: itr {:<5}/ {} \t loss {:.2f} \t accuracy {:.3f} \t lr {:.4f}"
+                .format('TRAIN' if is_train else 'TEST/VAL', self.epoch, i*batch_size, len(data_loader)*batch_size, loss.data.item(), sum(accuracy) / ((i+1)*batch_size), lr))
 
         mode = "train" if is_train else "test/val"
         print(f">>>[{mode}] loss: {sum(loop_loss):.2f}/accuracy: {sum(accuracy) / len(data_loader.dataset):.2%}")
