@@ -48,11 +48,10 @@ class Runner(object):
 
             # Set Progress bar
             pbar.set_description(
-                "{} epoch {}: itr {:<5}/ {} - loss {:.2f} - accuracy {:.2f}% - lr {:.4f}"
+                "{} epoch {}: itr {:<5}/ {} - loss {:.3f} - accuracy {:.2f}% - lr {:.4f}"
                 .format('TRAIN' if is_train else 'TEST', self.epoch, i*batch_size, len(data_loader)*batch_size, loss.data.item(), (sum(accuracy) / ((i+1)*batch_size))*100.0, lr))
 
         mode = "train" if is_train else "test/val"
-        print(f">>>[{mode}] loss: {sum(loop_loss):.2f}/accuracy: {sum(accuracy) / len(data_loader.dataset):.2%}")
         if mode == "test/val":
           with open('test_track.csv', 'a') as f:
             f.write(f">>>[{mode}] epoch: {self.epoch} loss: {sum(loop_loss):.2f}/accuracy: {sum(accuracy) / len(data_loader.dataset):.2%}\n")
@@ -75,7 +74,6 @@ class Runner(object):
     def loop(self, epochs, train_data, test_data, scheduler, batch_size):
         for ep in range(1, epochs + 1):
             self.epoch = ep
-            print("Epoch: {}".format(ep))
             self.train(train_data, batch_size)
             _, loss = self.test(test_data, batch_size)
             if scheduler is not None:

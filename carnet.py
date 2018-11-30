@@ -228,7 +228,7 @@ if __name__ == '__main__':
     p.add_argument("--weight_decay", default=1e-3, type=float, help="weight decay")
 
     # Increasing this increases model ability 
-    p.add_argument("--model_num_blocks", default=4, type=int, help="how deep the network is")
+    p.add_argument("--model_num_blocks", default=1, type=int, help="how deep the network is")
     p.add_argument("--lr", default=1e-1, type=float, help="learning rate")
 
     p.add_argument("--save_dir", default='models/v26', type=str, help="what model dir to save")
