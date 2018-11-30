@@ -105,7 +105,7 @@ def make_dataloader(folder_names, data_path, batch_size, task):
     return DataLoader(
         dataset,
         batch_size=batch_size,
-        num_workers=batch_size,
+        num_workers=int(batch_size/2),
         shuffle=True
     )
 
