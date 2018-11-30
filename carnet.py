@@ -172,7 +172,7 @@ def main(args):
 
     # This trainer class does all the work
     print("Instantiating runner...")
-    runner = Runner(se_resnet, optimizer, F.cross_entropy, save_dir=".")
+    runner = Runner(se_resnet, optimizer, F.cross_entropy, save_dir=args.save_dir)
     if args.train:
         print("Begin training...")
         runner.loop(args.num_epoch, train_loader, val_loader, scheduler, args.batch_size)
@@ -223,15 +223,16 @@ if __name__ == '__main__':
 
     # Increasing these adds regularization
     p.add_argument("--batch_size", default=24, type=int, help="batch size")
-    p.add_argument("--dropout_p", default=0.1, type=float, help="final layer p of neurons to drop")
-    p.add_argument("--weight_decay", default=1e-4, type=float, help="weight decay")
+    p.add_argument("--dropout_p", default=0.3, type=float, help="final layer p of neurons to drop")
+    p.add_argument("--weight_decay", default=1e-3, type=float, help="weight decay")
 
     # Increasing this increases model ability 
     p.add_argument("--model_num_blocks", default=2, type=int, help="how deep the network is")
     p.add_argument("--lr", default=1e-2, type=float, help="learning rate")
 
-    p.add_argument("--load_dir", default='models/v24', type=str, help="what model version to load")
-    p.add_argument("--load_epoch", default=8, type=int, help="what epoch to load, -1 for none")
+    p.add_argument("--save_dir", default='models/v25', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v24', type=str, help="what model dir to load")
+    p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=100, type=int, help="number of epochs to train")
     p.add_argument("--train", default=True, type=bool, help="whether to train a model")
     p.add_argument("--test", default=True, type=bool, help="whether to test a model")
