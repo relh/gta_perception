@@ -48,8 +48,8 @@ class Runner(object):
 
             # Set Progress bar
             pbar.set_description(
-                "{} epoch {}: itr {:<5}/ {} \t loss {:.2f} \t accuracy {:.3f} \t lr {:.4f}"
-                .format('TRAIN' if is_train else 'TEST/VAL', self.epoch, i*batch_size, len(data_loader)*batch_size, loss.data.item(), sum(accuracy) / ((i+1)*batch_size), lr))
+                "{} epoch {}: itr {:<5}/ {} - loss {:.2f} - accuracy {:.3f} - lr {:.4f}"
+                .format('TRAIN' if is_train else 'TEST', self.epoch, i*batch_size, len(data_loader)*batch_size, loss.data.item(), sum(accuracy) / ((i+1)*batch_size), lr))
 
         mode = "train" if is_train else "test/val"
         print(f">>>[{mode}] loss: {sum(loop_loss):.2f}/accuracy: {sum(accuracy) / len(data_loader.dataset):.2%}")
