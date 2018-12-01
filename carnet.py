@@ -46,9 +46,12 @@ def build_image_label_pairs(folders, data_path, task):
                   label_data = [0]*10 # Doesn't exist, must be test, set to 0
 
                 # Append items to dataset
+                # Index 0 is 23 classes, -1 is 3 classes
                 if task == 1:
-                  # Index 0 is 23 classes, -1 is 3 classes 
-                  class_label = int(list_mapping[int(label_data[9])][0])
+                    if args.num_class==23:
+                        class_label = int(list_mapping[int(label_data[9])][0])
+                    else:
+                        class_label = int(list_mapping[int(label_data[9])][-1])
                 elif task == 2:
                   class_label = [int(x) for x in label_data[3:6]]
 
@@ -82,7 +85,7 @@ def make_dataloader(folder_names, data_path, batch_size, task):
 
     # Declare the transforms
     preprocessing_transforms = transforms.Compose(
-                                  [transforms.Resize(384),
+                                  [transforms.Resize(128),
                                     transforms.ColorJitter(brightness=0.2,
                                                            contrast=0.2,
                                                            saturation=0.2,
@@ -146,7 +149,7 @@ def main(args):
     print("Building a model...")
     if args.task == 1:
       se_resnet = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks,
-                                                   dropout_p=args.dropout_p, num_classes=23),
+                                                   dropout_p=args.dropout_p, num_classes=args.num_class),
                                                    device_ids=gpus)
     elif args.task == 2:
       se_resnet = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks,
@@ -218,25 +221,26 @@ if __name__ == '__main__':
     import argparse
 
     p = argparse.ArgumentParser()
-    p.add_argument("--trainval_data_path", default='/hdd/trainval/', type=str, help="carnet trainval data_path")
-    p.add_argument("--test_data_path", default='/hdd/test/', type=str, help="carnet test data_path")
-    p.add_argument("--trainval_split_percentage", default=0.80, type=float, help="percentage of data to use in training")
+    p.add_argument("--trainval_data_path", default='../dataset/trainval', type=str, help="carnet trainval data_path")
+    p.add_argument("--test_data_path", default='../dataset/test', type=str, help="carnet test data_path")
+    p.add_argument("--trainval_split_percentage", default=0.8, type=float, help="percentage of data to use in training")
 
     # Increasing these adds regularization
-    p.add_argument("--batch_size", default=50, type=int, help="batch size")
+    p.add_argument("--batch_size", default=85, type=int, help="batch size")
     p.add_argument("--dropout_p", default=0.0, type=float, help="final layer p of neurons to drop")
     p.add_argument("--weight_decay", default=1e-3, type=float, help="weight decay")
 
     # Increasing this increases model ability 
-    p.add_argument("--model_num_blocks", default=1, type=int, help="how deep the network is")
-    p.add_argument("--lr", default=1e-1, type=float, help="learning rate")
+    p.add_argument("--model_num_blocks", default=2, type=int, help="how deep the network is")
+    p.add_argument("--lr", default=1e-2, type=float, help="learning rate")
 
-    p.add_argument("--save_dir", default='models/v27', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v27', type=str, help="what model dir to load")
+    p.add_argument("--save_dir", default='models/v33', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v33', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
-    p.add_argument("--num_epoch", default=100, type=int, help="number of epochs to train")
-    p.add_argument("--modes", default="Train|Test", type=str, help="string containing modes")
+    p.add_argument("--num_epoch", default=30, type=int, help="number of epochs to train")
+    p.add_argument("--modes", default="Train", type=str, help="string containing modes")
 
     p.add_argument("--task", default=1, type=int, help="whether to test a model")
+    p.add_argument("--num_class", default=23, type=int, help="whether to train over 23 or 3 labels")
     args = p.parse_args()
     main(args)

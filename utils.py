@@ -2,7 +2,8 @@ from pathlib import Path
 import torch
 
 from tqdm import tqdm
-
+import numpy as np
+# from livelossplot import PlotLosses
 
 class Runner(object):
     cuda = torch.cuda.is_available()
@@ -23,6 +24,10 @@ class Runner(object):
         accuracy = []
         outputs = []
         pbar = tqdm(data_loader, ncols=40, disable=False)
+
+        # liveloss = PlotLosses()
+
+
         for i, (path, data, target) in enumerate(pbar):
             if self.cuda:
                 data, target = data.cuda(), target.cuda()
@@ -33,7 +38,38 @@ class Runner(object):
                 for p in range(len(path)):
                   outputs.append((path[p], int(output.data.max(1)[1][p])))
 
-            loss = self.loss_f(output, target)
+            # print('output')
+            # print(output)
+            # print('target')
+            # print(target.data[0])
+            target_three = target.new_tensor([0], dtype=target.dtype)
+            # target_three.new_tensor()
+            output_three = output.new_tensor([0, 0, 0], dtype=output.dtype)
+            target_three, output_three = target_three.cuda(), output_three.cuda()
+            if np.isin(target.data[0],np.arange(1,9)):
+                target_three.data[0] = 1
+            elif np.isin(target.data[0],np.arange(9,15)):
+                target_three.data[0] = 2
+            else:
+                target_three.data[0] = 0
+
+            # print(output.size())
+            for i in np.arange(0,output.size()[1]):
+                if np.isin(i,np.arange(1,9)):
+                    output_three[1] += output.data[0][i]
+                    # output_three.index_put_(1,output_three.data[1] + output.data[i])
+                if np.isin(i,np.arange(9,15)):
+                    output_three[2] += output.data[0][i]
+                    # output_three.index_put_(2,output_three.data[2] + output.data[i])
+                else:
+                    output_three[0] += output.data[0][i]
+                    # output_three.index_put_(0,output_three.data[0] + output.data[i])
+
+            output_three = torch.nn.functional.softmax(output_three, dim=0)
+
+            loss = self.loss_f(output, target) + self.loss_f(output_three,target_three)
+
+
             loop_loss.append(loss.data.item() / len(data_loader))
             accuracy.append((output.data.max(1)[1] == target.data).sum().item())
             if is_train:
@@ -50,6 +86,17 @@ class Runner(object):
             pbar.set_description(
                 "{} epoch {}: itr {:<5}/ {} - loss {:.3f} - accuracy {:.2f}% - lr {:.4f}"
                 .format('TRAIN' if is_train else 'TEST ', self.epoch, i*batch_size, len(data_loader)*batch_size, loss.data.item(), (sum(accuracy) / ((i+1)*batch_size))*100.0, lr))
+            # if is_train:
+            #     liveloss.update({
+            #         'log loss': loss.data.item(),
+            #         'accuracy': (sum(accuracy) / ((i+1)*batch_size))*100.0,
+            #     })
+            # else:
+            #     liveloss.update({
+            #         'val_log loss': loss.data.item(),
+            #         'val_accuracy': (sum(accuracy) / ((i+1)*batch_size))*100.0,
+            #     })
+            # liveloss.draw()
 
         mode = "train" if is_train else "test/val"
         if mode == "test/val":
