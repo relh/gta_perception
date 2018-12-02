@@ -22,7 +22,11 @@ def get_classes_to_label_map():
     with open('classes.csv', 'r') as class_key:
       reader = csv.reader(class_key)
       list_mapping = list(reader)[1:]
-    return list_mapping
+
+    new_list_mapping = {}
+    for i, x in enumerate(list_mapping):
+      new_list_mapping[i] = int(x[-1])
+    return new_list_mapping
 
 
 def build_image_label_pairs(folders, data_path, task):
@@ -48,7 +52,7 @@ def build_image_label_pairs(folders, data_path, task):
                 # Append items to dataset
                 if task == 1:
                   # Index 0 is 23 classes, -1 is 3 classes 
-                  class_label = int(list_mapping[int(label_data[9])][0])
+                  class_label = int(label_data[9])
                 elif task == 2:
                   class_label = [int(x) for x in label_data[3:6]]
 
@@ -170,9 +174,25 @@ def main(args):
     optimizer = optim.Adam(params=se_resnet.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=5, verbose=True)
 
+    print("Building 23 to 3 class mapper...")
+    list_mapping = get_classes_to_label_map()
+
+    print("Declaring multi_loss function...")
+    def sum_cross_entropy(inp, target):
+      new_p_vals = torch.zeros(inp.shape[0], 3).cuda() # TODO hard coded
+      new_t_vals = target.clone()
+
+      for x in range(inp.shape[1]): # For each class currenetly existing
+        new_p_vals[:, list_mapping[x]] += inp[:, x] # Mapping to the new class
+
+      for x in range(inp.shape[0]):
+        new_t_vals[x] = list_mapping[int(target[x])]
+
+      return F.cross_entropy(inp, target) + F.cross_entropy(new_p_vals, new_t_vals)
+
     # This trainer class does all the work
     print("Instantiating runner...")
-    runner = Runner(se_resnet, optimizer, F.cross_entropy, save_dir=args.save_dir)
+    runner = Runner(se_resnet, optimizer, sum_cross_entropy, args.save_dir)
     if "train" in args.modes.lower():
         print("Begin training...")
         runner.loop(args.num_epoch, train_loader, val_loader, scheduler, args.batch_size)
@@ -193,8 +213,6 @@ def main(args):
         # Run the dataloader through the neural network
         print("Conducting a test...")
         outputs, _ = runner.test(test_loader, args.batch_size)
-
-        list_mapping = get_classes_to_label_map()
 
         # Write the submission to CSV
         print("Writing a submission to \"submission_task1.csv\"...")
@@ -223,7 +241,7 @@ if __name__ == '__main__':
     p.add_argument("--trainval_split_percentage", default=0.80, type=float, help="percentage of data to use in training")
 
     # Increasing these adds regularization
-    p.add_argument("--batch_size", default=50, type=int, help="batch size")
+    p.add_argument("--batch_size", default=25, type=int, help="batch size")
     p.add_argument("--dropout_p", default=0.0, type=float, help="final layer p of neurons to drop")
     p.add_argument("--weight_decay", default=1e-3, type=float, help="weight decay")
 
@@ -231,8 +249,8 @@ if __name__ == '__main__':
     p.add_argument("--model_num_blocks", default=1, type=int, help="how deep the network is")
     p.add_argument("--lr", default=1e-1, type=float, help="learning rate")
 
-    p.add_argument("--save_dir", default='models/v27', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v27', type=str, help="what model dir to load")
+    p.add_argument("--save_dir", default='models/v28', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v28', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=100, type=int, help="number of epochs to train")
     p.add_argument("--modes", default="Train|Test", type=str, help="string containing modes")
