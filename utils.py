@@ -1,7 +1,40 @@
 from pathlib import Path
 import torch
+import csv
 
 from tqdm import tqdm
+import torch.nn.functional as F
+
+def get_classes_to_label_map():
+    # Loads the CSV for converting 23 classes to 3 classes
+    with open('classes.csv', 'r') as class_key:
+      reader = csv.reader(class_key)
+      list_mapping = list(reader)[1:]
+
+    new_list_mapping = {}
+    for i, x in enumerate(list_mapping):
+      new_list_mapping[i] = int(x[-1])
+    return new_list_mapping
+
+
+list_mapping = get_classes_to_label_map()
+
+
+def class_shrinker(inp, target):
+  new_p_vals = torch.zeros(inp.shape[0], 3).cuda() # TODO hard coded
+  new_t_vals = target.clone()
+
+  for x in range(inp.shape[1]): # For each class currenetly existing
+    new_p_vals[:, list_mapping[x]] += inp[:, x] # Mapping to the new class
+
+  for x in range(inp.shape[0]):
+    new_t_vals[x] = list_mapping[int(target[x])]
+  return new_p_vals, new_t_vals
+
+
+def sum_cross_entropy(inp, target):
+  new_p_vals, new_t_vals = class_shrinker(inp, target)
+  return F.cross_entropy(inp, target) + F.cross_entropy(new_p_vals, new_t_vals)
 
 
 class Runner(object):
@@ -21,6 +54,7 @@ class Runner(object):
     def _iteration(self, data_loader, batch_size, is_train=True):
         loop_loss = []
         accuracy = []
+        accuracy_shrunk = []
         outputs = []
         pbar = tqdm(data_loader, ncols=40, disable=False)
         for i, (path, data, target) in enumerate(pbar):
@@ -35,6 +69,8 @@ class Runner(object):
 
             loss = self.loss_f(output, target)
             loop_loss.append(loss.data.item() / len(data_loader))
+            new_o, new_t = class_shrinker(output.data, target.data)
+            accuracy_shrunk.append((new_o.max(1)[1] == new_t).sum().item())
             accuracy.append((output.data.max(1)[1] == target.data).sum().item())
             if is_train:
                 self.optimizer.zero_grad()
@@ -48,8 +84,8 @@ class Runner(object):
 
             # Set Progress bar
             pbar.set_description(
-                "{} epoch {}: itr {:<5}/ {} - loss {:.3f} - accuracy {:.2f}% - lr {:.4f}"
-                .format('TRAIN' if is_train else 'TEST ', self.epoch, i*batch_size, len(data_loader)*batch_size, loss.data.item(), (sum(accuracy) / ((i+1)*batch_size))*100.0, lr))
+                "{} epoch {}: itr {:<5}/ {} - loss {:.3f} - accuracy {:.2f}% - accuracy_3 {:.2f}% - lr {:.4f}"
+                .format('TRAIN' if is_train else 'TEST ', self.epoch, i*batch_size, len(data_loader)*batch_size, loss.data.item(), (sum(accuracy) / ((i+1)*batch_size))*100.0, (sum(accuracy_shrunk) / ((i+1)*batch_size))*100.0, lr))
 
         mode = "train" if is_train else "test/val"
         if mode == "test/val":

@@ -14,26 +14,15 @@ from torch.utils.data import DataLoader, Dataset, random_split
 from torchvision import datasets, transforms
 
 from se_resnet import se_resnet_custom
-from utils import Runner 
+from utils import Runner, sum_cross_entropy, get_classes_to_label_map
 
 
-def get_classes_to_label_map():
-    # Loads the CSV for converting 23 classes to 3 classes
-    with open('classes.csv', 'r') as class_key:
-      reader = csv.reader(class_key)
-      list_mapping = list(reader)[1:]
-
-    new_list_mapping = {}
-    for i, x in enumerate(list_mapping):
-      new_list_mapping[i] = int(x[-1])
-    return new_list_mapping
-
+print("Building 23 to 3 class mapper...")
+from utils import list_mapping
 
 def build_image_label_pairs(folders, data_path, task):
     """This function takes in a set of folders and their root path. It returns a list 
     of tuples of (image paths, class label) where class label is either 0,1,2 as in classes.csv"""
-
-    list_mapping = get_classes_to_label_map()
 
     image_label_pairs = []
     # Iterate over the chosen folders
@@ -174,22 +163,7 @@ def main(args):
     optimizer = optim.Adam(params=se_resnet.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=5, verbose=True)
 
-    print("Building 23 to 3 class mapper...")
-    list_mapping = get_classes_to_label_map()
-
     print("Declaring multi_loss function...")
-    def sum_cross_entropy(inp, target):
-      new_p_vals = torch.zeros(inp.shape[0], 3).cuda() # TODO hard coded
-      new_t_vals = target.clone()
-
-      for x in range(inp.shape[1]): # For each class currenetly existing
-        new_p_vals[:, list_mapping[x]] += inp[:, x] # Mapping to the new class
-
-      for x in range(inp.shape[0]):
-        new_t_vals[x] = list_mapping[int(target[x])]
-
-      return F.cross_entropy(inp, target) + F.cross_entropy(new_p_vals, new_t_vals)
-
     # This trainer class does all the work
     print("Instantiating runner...")
     runner = Runner(se_resnet, optimizer, sum_cross_entropy, args.save_dir)
@@ -219,7 +193,6 @@ def main(args):
         with open('submission_task1.csv', 'w') as sub:
             sub.write('guid/image,label\n')
             for name, val in outputs:
-                print(val)
                 # Build path
                 mod_name = name.split('/')[3] + '/' + name.split('/')[4].split('_')[0]
                 mod_val = int(list_mapping[int(val)])
@@ -238,23 +211,23 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser()
     p.add_argument("--trainval_data_path", default='/hdd/trainval/', type=str, help="carnet trainval data_path")
     p.add_argument("--test_data_path", default='/hdd/test/', type=str, help="carnet test data_path")
-    p.add_argument("--trainval_split_percentage", default=0.80, type=float, help="percentage of data to use in training")
+    p.add_argument("--trainval_split_percentage", default=1.00, type=float, help="percentage of data to use in training")
 
     # Increasing these adds regularization
-    p.add_argument("--batch_size", default=25, type=int, help="batch size")
-    p.add_argument("--dropout_p", default=0.0, type=float, help="final layer p of neurons to drop")
-    p.add_argument("--weight_decay", default=1e-3, type=float, help="weight decay")
+    p.add_argument("--batch_size", default=2, type=int, help="batch size")
+    p.add_argument("--dropout_p", default=0.05, type=float, help="final layer p of neurons to drop")
+    p.add_argument("--weight_decay", default=1e-5, type=float, help="weight decay")
 
     # Increasing this increases model ability 
-    p.add_argument("--model_num_blocks", default=1, type=int, help="how deep the network is")
+    p.add_argument("--model_num_blocks", default=3, type=int, help="how deep the network is")
     p.add_argument("--lr", default=1e-1, type=float, help="learning rate")
 
-    p.add_argument("--save_dir", default='models/v28', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v28', type=str, help="what model dir to load")
-    p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
-    p.add_argument("--num_epoch", default=100, type=int, help="number of epochs to train")
+    p.add_argument("--save_dir", default='models/v29', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v29', type=str, help="what model dir to load")
+    p.add_argument("--load_epoch", default=38, type=int, help="what epoch to load, -1 for none")
+    p.add_argument("--num_epoch", default=30, type=int, help="number of epochs to train")
     p.add_argument("--modes", default="Train|Test", type=str, help="string containing modes")
 
-    p.add_argument("--task", default=1, type=int, help="whether to test a model")
+    p.add_argument("--task", default=1, type=int, help="what task to train a model")
     args = p.parse_args()
     main(args)
