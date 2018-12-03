@@ -211,7 +211,7 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser()
     p.add_argument("--trainval_data_path", default='/hdd/trainval/', type=str, help="carnet trainval data_path")
     p.add_argument("--test_data_path", default='/hdd/test/', type=str, help="carnet test data_path")
-    p.add_argument("--trainval_split_percentage", default=1.00, type=float, help="percentage of data to use in training")
+    p.add_argument("--trainval_split_percentage", default=0.99, type=float, help="percentage of data to use in training")
 
     # Increasing these adds regularization
     p.add_argument("--batch_size", default=16, type=int, help="batch size")
