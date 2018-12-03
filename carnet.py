@@ -222,7 +222,7 @@ def main(args):
                 print(val)
                 # Build path
                 mod_name = name.split('/')[3] + '/' + name.split('/')[4].split('_')[0]
-                mod_val = int(list_mapping[int(val)][-1])
+                mod_val = int(list_mapping[int(val)])
 
                 # Print and write row
                 print(mod_name + ',' + str(mod_val))
