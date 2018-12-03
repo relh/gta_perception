@@ -84,7 +84,7 @@ class Runner(object):
 
             # Set Progress bar
             pbar.set_description(
-                "{} epoch {}: itr {:<5}/ {} - loss {:.3f} - accuracy {:.2f}% - accuracy_3 {:.2f}% - lr {:.4f}"
+                "{} epoch {}: itr {:<5}/ {} - loss {:.3f} - acc {:.2f}% - acc3 {:.2f}% - lr {:.4f}"
                 .format('TRAIN' if is_train else 'TEST ', self.epoch, i*batch_size, len(data_loader)*batch_size, loss.data.item(), (sum(accuracy) / ((i+1)*batch_size))*100.0, (sum(accuracy_shrunk) / ((i+1)*batch_size))*100.0, lr))
 
         mode = "train" if is_train else "test/val"
