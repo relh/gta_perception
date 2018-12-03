@@ -220,9 +220,9 @@ if __name__ == '__main__':
 
     # Increasing this increases model ability 
     p.add_argument("--model_num_blocks", default=3, type=int, help="how deep the network is")
-    p.add_argument("--lr", default=1e-1, type=float, help="learning rate")
+    p.add_argument("--lr", default=1e-3, type=float, help="learning rate")
 
-    p.add_argument("--save_dir", default='models/v29', type=str, help="what model dir to save")
+    p.add_argument("--save_dir", default='models/v30', type=str, help="what model dir to save")
     p.add_argument("--load_dir", default='models/v29', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=38, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=30, type=int, help="number of epochs to train")
