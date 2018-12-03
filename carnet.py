@@ -206,7 +206,7 @@ def main(args):
             for name, val in outputs:
                 print(val)
                 # Build path
-                mod_name = name.split('/')[3] + '/' + name.split('/')[4].split('_')[0]
+                mod_name = name.split('/')[2] + '/' + name.split('/')[3].split('_')[0]
                 mod_val = int(list_mapping[int(val)][-1])
 
                 # Print and write row
