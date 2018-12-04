@@ -220,17 +220,17 @@ if __name__ == '__main__':
 
     # Increasing these adds regularization
     p.add_argument("--batch_size", default=50, type=int, help="batch size")
-    p.add_argument("--dropout_p", default=0.00, type=float, help="final layer p of neurons to drop")
-    p.add_argument("--weight_decay", default=1e-5, type=float, help="weight decay")
+    p.add_argument("--dropout_p", default=0.50, type=float, help="final layer p of neurons to drop")
+    p.add_argument("--weight_decay", default=1e-4, type=float, help="weight decay")
 
     # Increasing this increases model ability 
     p.add_argument("--model_num_blocks", default=3, type=int, help="how deep the network is")
-    p.add_argument("--lr", default=1e-3, type=float, help="learning rate")
+    p.add_argument("--lr", default=1e-4, type=float, help="learning rate")
 
-    p.add_argument("--save_dir", default='models/v31', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v30', type=str, help="what model dir to load")
+    p.add_argument("--save_dir", default='models/v33', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v32', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
-    p.add_argument("--num_epoch", default=30, type=int, help="number of epochs to train")
+    p.add_argument("--num_epoch", default=10, type=int, help="number of epochs to train")
     p.add_argument("--modes", default="Train|Test", type=str, help="string containing modes")
 
     p.add_argument("--task", default=3, type=int, help="what task to train a model, or pretrained model")
