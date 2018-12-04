@@ -16,6 +16,9 @@ from torchvision import datasets, transforms
 from se_resnet import se_resnet_custom
 from utils import Runner, sum_cross_entropy, get_classes_to_label_map
 
+from cnn_finetune import make_model
+
+
 
 print("Building 23 to 3 class mapper...")
 from utils import list_mapping
@@ -39,7 +42,7 @@ def build_image_label_pairs(folders, data_path, task):
                   label_data = [0]*10 # Doesn't exist, must be test, set to 0
 
                 # Append items to dataset
-                if task == 1:
+                if task == 1 or task == 3:
                   # Index 0 is 23 classes, -1 is 3 classes 
                   class_label = int(label_data[9])
                 elif task == 2:
@@ -138,13 +141,15 @@ def main(args):
     # Build the model to run
     print("Building a model...")
     if args.task == 1:
-      se_resnet = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks,
+      model = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks,
                                                    dropout_p=args.dropout_p, num_classes=23),
                                                    device_ids=gpus)
     elif args.task == 2:
-      se_resnet = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks,
+      model = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks,
                                                    dropout_p=args.dropout_p, num_classes=3),
                                                    device_ids=gpus)
+    elif args.task == 3:
+      model = make_model('resnet18', num_classes=23, pretrained=True)
       # TODO make this use MSE and have 3 heads, one for X,Y,Z
 
     # Load an existing model, be careful with train/validation
@@ -156,17 +161,17 @@ def main(args):
         #new_details = dict([(k[7:], v) for k, v in details['weight'].items()])
         #new_details = dict([("module."+k, v) for k, v in details['weight'].items()])
         new_details = dict([(k, v) for k, v in details['weight'].items()])
-        se_resnet.load_state_dict(new_details)
+        model.load_state_dict(new_details)
 
     # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
     print("Creating optimizer and scheduler...")
-    optimizer = optim.Adam(params=se_resnet.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=5, verbose=True)
 
     print("Declaring multi_loss function...")
     # This trainer class does all the work
     print("Instantiating runner...")
-    runner = Runner(se_resnet, optimizer, sum_cross_entropy, args.save_dir)
+    runner = Runner(model, optimizer, sum_cross_entropy, args.save_dir)
     if "train" in args.modes.lower():
         print("Begin training...")
         runner.loop(args.num_epoch, train_loader, val_loader, scheduler, args.batch_size)
@@ -178,7 +183,7 @@ def main(args):
                         if os.path.isdir(os.path.join(args.test_data_path, x))]
         
         # Switch to eval mode
-        se_resnet.eval()
+        model.eval()
 
         # Make test dataloader
         print("Making test dataloaders...")
@@ -211,7 +216,7 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser()
     p.add_argument("--trainval_data_path", default='/hdd/trainval/', type=str, help="carnet trainval data_path")
     p.add_argument("--test_data_path", default='/hdd/test/', type=str, help="carnet test data_path")
-    p.add_argument("--trainval_split_percentage", default=0.99, type=float, help="percentage of data to use in training")
+    p.add_argument("--trainval_split_percentage", default=0.80, type=float, help="percentage of data to use in training")
 
     # Increasing these adds regularization
     p.add_argument("--batch_size", default=16, type=int, help="batch size")
@@ -222,12 +227,12 @@ if __name__ == '__main__':
     p.add_argument("--model_num_blocks", default=3, type=int, help="how deep the network is")
     p.add_argument("--lr", default=1e-3, type=float, help="learning rate")
 
-    p.add_argument("--save_dir", default='models/v30', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v29', type=str, help="what model dir to load")
-    p.add_argument("--load_epoch", default=38, type=int, help="what epoch to load, -1 for none")
+    p.add_argument("--save_dir", default='models/v31', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v30', type=str, help="what model dir to load")
+    p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=30, type=int, help="number of epochs to train")
     p.add_argument("--modes", default="Train|Test", type=str, help="string containing modes")
 
-    p.add_argument("--task", default=1, type=int, help="what task to train a model")
+    p.add_argument("--task", default=3, type=int, help="what task to train a model, or pretrained model")
     args = p.parse_args()
     main(args)
