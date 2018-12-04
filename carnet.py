@@ -145,12 +145,12 @@ def main(args):
                                                    dropout_p=args.dropout_p, num_classes=23),
                                                    device_ids=gpus)
     elif args.task == 2:
+      # TODO make this use MSE and have 3 heads, one for X,Y,Z
       model = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks,
                                                    dropout_p=args.dropout_p, num_classes=3),
                                                    device_ids=gpus)
     elif args.task == 3:
-      model = make_model('resnet18', num_classes=23, pretrained=True)
-      # TODO make this use MSE and have 3 heads, one for X,Y,Z
+      model = make_model('resnet18', num_classes=23, dropout_p=args.dropout_p, pretrained=True)
 
     # Load an existing model, be careful with train/validation
     if args.load_epoch > 0:
@@ -219,8 +219,8 @@ if __name__ == '__main__':
     p.add_argument("--trainval_split_percentage", default=0.80, type=float, help="percentage of data to use in training")
 
     # Increasing these adds regularization
-    p.add_argument("--batch_size", default=16, type=int, help="batch size")
-    p.add_argument("--dropout_p", default=0.05, type=float, help="final layer p of neurons to drop")
+    p.add_argument("--batch_size", default=50, type=int, help="batch size")
+    p.add_argument("--dropout_p", default=0.00, type=float, help="final layer p of neurons to drop")
     p.add_argument("--weight_decay", default=1e-5, type=float, help="weight decay")
 
     # Increasing this increases model ability 
