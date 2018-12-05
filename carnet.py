@@ -42,11 +42,11 @@ def build_image_label_pairs(folders, data_path, task):
                   label_data = [0]*10 # Doesn't exist, must be test, set to 0
 
                 # Append items to dataset
-                if task == 1 or task == 3:
+                if task == 2:
+                  class_label = [int(x) for x in label_data[3:6]]
+                else:
                   # Index 0 is 23 classes, -1 is 3 classes 
                   class_label = int(label_data[9])
-                elif task == 2:
-                  class_label = [int(x) for x in label_data[3:6]]
 
                 image_label_pairs.append((os.path.join(data_path,folder,file_name), class_label))
     return image_label_pairs 
@@ -149,7 +149,7 @@ def main(args):
       model = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks,
                                                    dropout_p=args.dropout_p, num_classes=3),
                                                    device_ids=gpus)
-    elif args.task == 3:
+    elif args.task == 3 or args.task == 4:
       model = make_model('resnet18', num_classes=23, dropout_p=args.dropout_p, pretrained=True)
 
     # Load an existing model, be careful with train/validation
@@ -165,8 +165,12 @@ def main(args):
 
     # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
     print("Creating optimizer and scheduler...")
-    optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=5, verbose=True)
+    if args.task == 4:
+      optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+      scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5) # Decary the LR
+    else:
+      optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=args.weight_decay, amsgrad=True)
+      scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=5, verbose=True)
 
     print("Declaring multi_loss function...")
     # This trainer class does all the work
@@ -191,7 +195,7 @@ def main(args):
 
         # Run the dataloader through the neural network
         print("Conducting a test...")
-        outputs, _ = runner.test(test_loader, args.batch_size)
+        _, _, outputs = runner.test(test_loader, args.batch_size)
 
         # Write the submission to CSV
         print("Writing a submission to \"submission_task1.csv\"...")
@@ -216,7 +220,7 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser()
     p.add_argument("--trainval_data_path", default='/hdd/trainval/', type=str, help="carnet trainval data_path")
     p.add_argument("--test_data_path", default='/hdd/test/', type=str, help="carnet test data_path")
-    p.add_argument("--trainval_split_percentage", default=0.80, type=float, help="percentage of data to use in training")
+    p.add_argument("--trainval_split_percentage", default=0.95, type=float, help="percentage of data to use in training")
 
     # Increasing these adds regularization
     p.add_argument("--batch_size", default=55, type=int, help="batch size")
@@ -225,14 +229,14 @@ if __name__ == '__main__':
 
     # Increasing this increases model ability 
     p.add_argument("--model_num_blocks", default=3, type=int, help="how deep the network is")
-    p.add_argument("--lr", default=1e-3, type=float, help="learning rate")
+    p.add_argument("--lr", default=1e-4, type=float, help="learning rate")
 
-    p.add_argument("--save_dir", default='models/v36', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v35', type=str, help="what model dir to load")
+    p.add_argument("--save_dir", default='models/v38', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v37', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
-    p.add_argument("--num_epoch", default=100, type=int, help="number of epochs to train")
+    p.add_argument("--num_epoch", default=300, type=int, help="number of epochs to train")
     p.add_argument("--modes", default="Train|Test", type=str, help="string containing modes")
 
-    p.add_argument("--task", default=3, type=int, help="what task to train a model, or pretrained model")
+    p.add_argument("--task", default=4, type=int, help="what task to train a model, or pretrained model")
     args = p.parse_args()
     main(args)

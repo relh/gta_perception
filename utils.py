@@ -34,7 +34,7 @@ def class_shrinker(inp, target):
 
 def sum_cross_entropy(inp, target):
   new_p_vals, new_t_vals = class_shrinker(inp, target)
-  return F.cross_entropy(inp, target) + 2.0 * F.cross_entropy(new_p_vals, new_t_vals)
+  return F.cross_entropy(inp, target) + 3.0 * F.cross_entropy(new_p_vals, new_t_vals)
 
 
 class Runner(object):
@@ -50,6 +50,7 @@ class Runner(object):
         self.save_dir = save_dir
         self.save_freq = save_freq
         self.epoch = 0
+        self.best_acc = -100
 
     def _iteration(self, data_loader, batch_size, is_train=True):
         loop_loss = []
@@ -92,35 +93,38 @@ class Runner(object):
           with open('test_track.csv', 'a') as f:
             f.write(f">>>[{mode}] epoch: {self.epoch} loss: {sum(loop_loss):.2f}/accuracy: {sum(accuracy_shrunk) / len(data_loader.dataset):.2%}\n")
         if is_train:
-          return loop_loss, accuracy, None
+          return loop_loss, accuracy_shrunk, None
         else:
-          return loop_loss, accuracy, outputs
+          return loop_loss, accuracy_shrunk, outputs
 
     def train(self, data_loader, batch_size):
         self.model.train()
         with torch.enable_grad():
-            loss, correct, _ = self._iteration(data_loader, batch_size)
+            loss, accuracy, _ = self._iteration(data_loader, batch_size)
 
     def test(self, data_loader, batch_size):
         self.model.eval()
         with torch.no_grad():
-            loss, correct, outputs = self._iteration(data_loader, batch_size, is_train=False)
-        return outputs, loss
+            loss, accuracy, outputs = self._iteration(data_loader, batch_size, is_train=False)
+        return loss, accuracy, outputs
 
     def loop(self, epochs, train_data, test_data, scheduler, batch_size):
         for ep in range(1, epochs + 1):
             self.epoch = ep
             self.train(train_data, batch_size)
-            _, loss = self.test(test_data, batch_size)
+            loss, accuracy, outputs = self.test(test_data, batch_size)
             if scheduler is not None:
                 scheduler.step(sum(loss))
             if ep % self.save_freq:
-                self.save(ep)
+                self.save(ep, accuracy)
 
-    def save(self, epoch, **kwargs):
+    def save(self, epoch, acc, **kwargs):
         if self.save_dir is not None:
             model_out_path = Path(self.save_dir)
             state = {"epoch": epoch, "weight": self.model.state_dict()}
             if not model_out_path.exists():
                 model_out_path.mkdir()
+            if self.best_acc < sum(acc):
+                torch.save(state, model_out_path / "model_epoch_best.pth")
+                self.best_acc = sum(acc)
             torch.save(state, model_out_path / "model_epoch_{}.pth".format(epoch))
