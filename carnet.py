@@ -150,7 +150,9 @@ def main(args):
                                                    dropout_p=args.dropout_p, num_classes=3),
                                                    device_ids=gpus)
     elif args.task == 3 or args.task == 4:
-      model = make_model('resnet18', num_classes=23, dropout_p=args.dropout_p, pretrained=True)
+      model = make_model('inception_v4', num_classes=23, dropout_p=args.dropout_p, pretrained=True)
+      #model = make_model('resnet18', num_classes=23, dropout_p=args.dropout_p, pretrained=True)
+
 
     # Load an existing model, be careful with train/validation
     if args.load_epoch > 0:
@@ -203,7 +205,7 @@ def main(args):
             sub.write('guid/image,label\n')
             for name, val in outputs:
                 # Build path
-                mod_name = name.split('/')[3] + '/' + name.split('/')[4].split('_')[0]
+                mod_name = name.split('/')[2] + '/' + name.split('/')[3].split('_')[0]
                 mod_val = int(list_mapping[int(val)])
 
                 # Print and write row
@@ -218,12 +220,12 @@ if __name__ == '__main__':
     import argparse
 
     p = argparse.ArgumentParser()
-    p.add_argument("--trainval_data_path", default='/hdd/trainval/', type=str, help="carnet trainval data_path")
-    p.add_argument("--test_data_path", default='/hdd/test/', type=str, help="carnet test data_path")
+    p.add_argument("--trainval_data_path", default='./trainval/', type=str, help="carnet trainval data_path")
+    p.add_argument("--test_data_path", default='./test/', type=str, help="carnet test data_path")
     p.add_argument("--trainval_split_percentage", default=0.95, type=float, help="percentage of data to use in training")
 
     # Increasing these adds regularization
-    p.add_argument("--batch_size", default=55, type=int, help="batch size")
+    p.add_argument("--batch_size", default=25, type=int, help="batch size")
     p.add_argument("--dropout_p", default=0.30, type=float, help="final layer p of neurons to drop")
     p.add_argument("--weight_decay", default=1e-3, type=float, help="weight decay")
 
@@ -231,8 +233,8 @@ if __name__ == '__main__':
     p.add_argument("--model_num_blocks", default=3, type=int, help="how deep the network is")
     p.add_argument("--lr", default=1e-4, type=float, help="learning rate")
 
-    p.add_argument("--save_dir", default='models/v38', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v37', type=str, help="what model dir to load")
+    p.add_argument("--save_dir", default='models/v72', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v71', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=300, type=int, help="number of epochs to train")
     p.add_argument("--modes", default="Train|Test", type=str, help="string containing modes")
