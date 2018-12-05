@@ -166,8 +166,8 @@ def main(args):
     # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
     print("Creating optimizer and scheduler...")
     if args.task == 4:
-      optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
-      scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5) # Decary the LR
+      optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
+      scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5) # Decay the LR
     else:
       optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=args.weight_decay, amsgrad=True)
       scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=5, verbose=True)
@@ -229,7 +229,8 @@ if __name__ == '__main__':
 
     # Increasing this increases model ability 
     p.add_argument("--model_num_blocks", default=3, type=int, help="how deep the network is")
-    p.add_argument("--lr", default=1e-4, type=float, help="learning rate")
+    p.add_argument("--lr", default=1e-3, type=float, help="learning rate")
+    p.add_argument("--momentum", default=0.9, type=float, help="momentum value")
 
     p.add_argument("--save_dir", default='models/v38', type=str, help="what model dir to save")
     p.add_argument("--load_dir", default='models/v37', type=str, help="what model dir to load")
