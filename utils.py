@@ -34,7 +34,7 @@ def class_shrinker(inp, target):
 
 def sum_cross_entropy(inp, target):
   new_p_vals, new_t_vals = class_shrinker(inp, target)
-  return F.cross_entropy(inp, target) + F.cross_entropy(new_p_vals, new_t_vals)
+  return F.cross_entropy(inp, target) + 2.0 * F.cross_entropy(new_p_vals, new_t_vals)
 
 
 class Runner(object):
@@ -90,7 +90,7 @@ class Runner(object):
         mode = "train" if is_train else "test/val"
         if mode == "test/val":
           with open('test_track.csv', 'a') as f:
-            f.write(f">>>[{mode}] epoch: {self.epoch} loss: {sum(loop_loss):.2f}/accuracy: {sum(accuracy) / len(data_loader.dataset):.2%}\n")
+            f.write(f">>>[{mode}] epoch: {self.epoch} loss: {sum(loop_loss):.2f}/accuracy: {sum(accuracy_shrunk) / len(data_loader.dataset):.2%}\n")
         if is_train:
           return loop_loss, accuracy, None
         else:
