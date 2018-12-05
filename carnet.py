@@ -150,7 +150,7 @@ def main(args):
                                                    dropout_p=args.dropout_p, num_classes=3),
                                                    device_ids=gpus)
     elif args.task == 3 or args.task == 4:
-      model = make_model('resnet18', num_classes=23, dropout_p=args.dropout_p, pretrained=True)
+      model = make_model('resnext101_32x4d', num_classes=23, dropout_p=args.dropout_p, pretrained=True)
 
     # Load an existing model, be careful with train/validation
     if args.load_epoch > 0:
@@ -223,7 +223,7 @@ if __name__ == '__main__':
     p.add_argument("--trainval_split_percentage", default=0.95, type=float, help="percentage of data to use in training")
 
     # Increasing these adds regularization
-    p.add_argument("--batch_size", default=55, type=int, help="batch size")
+    p.add_argument("--batch_size", default=8, type=int, help="batch size")
     p.add_argument("--dropout_p", default=0.30, type=float, help="final layer p of neurons to drop")
     p.add_argument("--weight_decay", default=1e-3, type=float, help="weight decay")
 
@@ -232,10 +232,10 @@ if __name__ == '__main__':
     p.add_argument("--lr", default=1e-3, type=float, help="learning rate")
     p.add_argument("--momentum", default=0.9, type=float, help="momentum value")
 
-    p.add_argument("--save_dir", default='models/v38', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v37', type=str, help="what model dir to load")
+    p.add_argument("--save_dir", default='models/v39', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v39', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
-    p.add_argument("--num_epoch", default=300, type=int, help="number of epochs to train")
+    p.add_argument("--num_epoch", default=30, type=int, help="number of epochs to train")
     p.add_argument("--modes", default="Train|Test", type=str, help="string containing modes")
 
     p.add_argument("--task", default=4, type=int, help="what task to train a model, or pretrained model")
