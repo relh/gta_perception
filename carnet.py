@@ -18,10 +18,82 @@ from utils import Runner, sum_cross_entropy, get_classes_to_label_map
 
 from cnn_finetune import make_model
 
-
+#pip install dependencies from https://github.com/aleju/imgaug
+import imgaug as ia
+from imgaug import augmenters as iaa
 
 print("Building 23 to 3 class mapper...")
 from utils import list_mapping
+
+def add_noise_to_image(image):
+    sometimes = lambda aug: iaa.Sometimes(0.8, aug)
+
+    # Define our sequence of augmentation steps that will be applied to every image.
+    seq = iaa.Sequential(
+        [
+            iaa.SomeOf((4, 5),
+                [
+
+                    # Blur each image with varying strength using
+                    # gaussian blur (sigma between 0 and 3.0),
+                    # average/uniform blur (kernel size between 2x2 and 7x7)
+                    # median blur (kernel size between 3x3 and 11x11).
+                    iaa.OneOf([
+                        iaa.GaussianBlur((0, 3.0)),
+                        iaa.AverageBlur(k=(2, 7)),
+                        #iaa.MedianBlur(k=(3, 11)),
+                    ]),
+
+                    # Sharpen each image, overlay the result with the original
+                    # image using an alpha between 0 (no sharpening) and 1
+                    # (full sharpening effect).
+                    # iaa.Sharpen(alpha=(0, 1.0), lightness=(0.75, 1.5)),
+
+                    # Add gaussian noise to some images.
+                    # In 50% of these cases, the noise is randomly sampled per
+                    # channel and pixel.
+                    # In the other 50% of all cases it is sampled once per
+                    # pixel (i.e. brightness change).
+                    iaa.AdditiveGaussianNoise(
+                        loc=0, scale=(0.0, 0.05*255), per_channel=0.5
+                    ),
+
+                    # Either drop randomly 1 to 10% of all pixels (i.e. set
+                    # them to black) or drop them on an image with 2-5% percent
+                    # of the original size, leading to large dropped
+                    # rectangles.
+                    # iaa.OneOf([
+                    #     iaa.Dropout((0.05, 0.2), per_channel=0.5),
+                    #     iaa.CoarseDropout(
+                    #         (0.03, 0.15), size_percent=(0.02, 0.05),
+                    #         per_channel=0.2
+                    #     ),
+                    # ]),
+		    iaa.SaltAndPepper(0.30, PCH=true),
+
+                    # Convert each image to grayscale and then overlay the
+                    # result with the original with random alpha. I.e. remove
+                    # colors with varying strengths.
+                    #iaa.Grayscale(alpha=(0.0, 1.0)),
+
+                    # In some images move pixels locally around (with random
+                    # strengths).
+                    # sometimes(
+                    #     iaa.ElasticTransformation(alpha=(0.5, 3.5), sigma=0.25)
+                    # ),
+
+                    # In some images distort local areas with varying strength.
+                    # sometimes(iaa.PiecewiseAffine(scale=(0.01, 0.05)))
+                ],
+                # do all of the above augmentations in random order
+                random_order=True
+            )
+        ],
+        # do all of the above augmentations in random order
+        random_order=True
+    )
+    image = (image * 255).astype('uint8')
+    return ((seq.augment_images(image))/255.0).astype('float64')
 
 def build_image_label_pairs(folders, data_path, task):
     """This function takes in a set of folders and their root path. It returns a list 
@@ -64,6 +136,7 @@ class CarDataset(Dataset):
         image_obj = Image.open(im_path) # Open image
         transformed_image = self.transforms(image_obj) # Apply transformations
         transformed_image.permute(2,0,1) # Swap color channels
+        add_noise_to_image(transformed_image.numpy())
         return (im_path,
                torch.tensor(transformed_image).float(),
                torch.from_numpy(np.array(im_class)).long())
@@ -233,8 +306,8 @@ if __name__ == '__main__':
     p.add_argument("--lr", default=1e-3, type=float, help="learning rate")
     p.add_argument("--momentum", default=0.9, type=float, help="momentum value")
 
-    p.add_argument("--save_dir", default='models/v72', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v71', type=str, help="what model dir to load")
+    p.add_argument("--save_dir", default='models/v73', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v72', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=30, type=int, help="number of epochs to train")
     p.add_argument("--modes", default="Train|Test", type=str, help="string containing modes")
