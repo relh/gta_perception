@@ -31,9 +31,6 @@ def add_noise_to_image(image):
     # Define our sequence of augmentation steps that will be applied to every image.
     seq = iaa.Sequential(
         [
-            iaa.SomeOf((4, 5),
-                [
-
                     # Blur each image with varying strength using
                     # gaussian blur (sigma between 0 and 3.0),
                     # average/uniform blur (kernel size between 2x2 and 7x7)
@@ -69,7 +66,9 @@ def add_noise_to_image(image):
                     #         per_channel=0.2
                     #     ),
                     # ]),
-		    iaa.SaltAndPepper(0.30, PCH=true),
+		    iaa.ElasticTransformation(alpha=(2.5, 5.0), sigma=0.25),
+		    iaa.CoarseDropout((0.20, 0.50), size_percent=(0.02, 0.25)),
+		    iaa.SaltAndPepper(0.50, True),
 
                     # Convert each image to grayscale and then overlay the
                     # result with the original with random alpha. I.e. remove
@@ -84,10 +83,10 @@ def add_noise_to_image(image):
 
                     # In some images distort local areas with varying strength.
                     # sometimes(iaa.PiecewiseAffine(scale=(0.01, 0.05)))
-                ],
+                #],
                 # do all of the above augmentations in random order
-                random_order=True
-            )
+                # random_order=True
+            #)
         ],
         # do all of the above augmentations in random order
         random_order=True
@@ -136,7 +135,8 @@ class CarDataset(Dataset):
         image_obj = Image.open(im_path) # Open image
         transformed_image = self.transforms(image_obj) # Apply transformations
         transformed_image.permute(2,0,1) # Swap color channels
-        add_noise_to_image(transformed_image.numpy())
+        #transformed_image_np = transformed_image.numpy()
+        transformed_image = torch.tensor(add_noise_to_image(transformed_image.numpy())).float()
         return (im_path,
                torch.tensor(transformed_image).float(),
                torch.from_numpy(np.array(im_class)).long())
