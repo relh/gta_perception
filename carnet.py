@@ -31,6 +31,8 @@ def add_noise_to_image(image):
     # Define our sequence of augmentation steps that will be applied to every image.
     seq = iaa.Sequential(
         [
+		iaa.SomeOf((0, 5),
+                [
                     # Blur each image with varying strength using
                     # gaussian blur (sigma between 0 and 3.0),
                     # average/uniform blur (kernel size between 2x2 and 7x7)
@@ -52,7 +54,7 @@ def add_noise_to_image(image):
                     # In the other 50% of all cases it is sampled once per
                     # pixel (i.e. brightness change).
                     iaa.AdditiveGaussianNoise(
-                        loc=0, scale=(0.0, 0.05*255), per_channel=0.5
+                        loc=0, scale=(0.0, 0.05*255)# , per_channel=0.5
                     ),
 
                     # Either drop randomly 1 to 10% of all pixels (i.e. set
@@ -66,9 +68,10 @@ def add_noise_to_image(image):
                     #         per_channel=0.2
                     #     ),
                     # ]),
-		    iaa.ElasticTransformation(alpha=(2.5, 5.0), sigma=0.25),
 		    iaa.CoarseDropout((0.20, 0.50), size_percent=(0.02, 0.25)),
-		    iaa.SaltAndPepper(0.50, True),
+
+		    #iaa.ElasticTransformation(alpha=(2.5, 5.0), sigma=0.25),
+		    iaa.SaltAndPepper(0.30, False),
 
                     # Convert each image to grayscale and then overlay the
                     # result with the original with random alpha. I.e. remove
@@ -83,10 +86,10 @@ def add_noise_to_image(image):
 
                     # In some images distort local areas with varying strength.
                     # sometimes(iaa.PiecewiseAffine(scale=(0.01, 0.05)))
-                #],
+                ],
                 # do all of the above augmentations in random order
-                # random_order=True
-            #)
+                random_order=True
+            )
         ],
         # do all of the above augmentations in random order
         random_order=True
