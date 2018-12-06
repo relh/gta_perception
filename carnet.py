@@ -303,7 +303,7 @@ if __name__ == '__main__':
     # Increasing these adds regularization
     p.add_argument("--batch_size", default=16, type=int, help="batch size")
     p.add_argument("--dropout_p", default=0.30, type=float, help="final layer p of neurons to drop")
-    p.add_argument("--weight_decay", default=1e-2, type=float, help="weight decay")
+    p.add_argument("--weight_decay", default=4e-2, type=float, help="weight decay")
 
     # Increasing this increases model ability 
     p.add_argument("--model_num_blocks", default=3, type=int, help="how deep the network is")
