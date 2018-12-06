@@ -68,10 +68,10 @@ def add_noise_to_image(image):
                     #         per_channel=0.2
                     #     ),
                     # ]),
-		    iaa.CoarseDropout((0.20, 0.50), size_percent=(0.02, 0.25)),
+		    iaa.CoarseDropout((0, 0.15), size_percent=(0.02, 0.25)),
 
 		    #iaa.ElasticTransformation(alpha=(2.5, 5.0), sigma=0.25),
-		    iaa.SaltAndPepper(0.30, False),
+		    iaa.SaltAndPepper(0.15, False),
 
                     # Convert each image to grayscale and then overlay the
                     # result with the original with random alpha. I.e. remove
@@ -141,6 +141,8 @@ class CarDataset(Dataset):
             transformed_image.permute(2,0,1) # Swap color channels
             #transformed_image_np = transformed_image.numpy()
             transformed_image = torch.tensor(add_noise_to_image(transformed_image.numpy())).float()
+	else:
+	    transformed_image = image_obj
         return (im_path,
                torch.tensor(transformed_image).float(),
                torch.from_numpy(np.array(im_class)).long())
