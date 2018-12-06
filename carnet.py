@@ -127,19 +127,20 @@ def build_image_label_pairs(folders, data_path, task):
 
     
 class CarDataset(Dataset):
-    def __init__(self, image_label_pairs, transforms):
+    def __init__(self, image_label_pairs, transforms, isTrain = False):
         """This Dataset takes in image and label pairs (tuples) and a list of transformations to apply 
         and returns tuples of (image_path, transformed_image_tensor, label_tensor)"""
         self.image_label_pairs = image_label_pairs 
         self.transforms = transforms
-        
+        self.isTrain = isTrain
     def __getitem__(self, index):
         im_path, im_class = self.image_label_pairs[index]
         image_obj = Image.open(im_path) # Open image
-        transformed_image = self.transforms(image_obj) # Apply transformations
-        transformed_image.permute(2,0,1) # Swap color channels
-        #transformed_image_np = transformed_image.numpy()
-        transformed_image = torch.tensor(add_noise_to_image(transformed_image.numpy())).float()
+        if self.isTrain :
+            transformed_image = self.transforms(image_obj) # Apply transformations
+            transformed_image.permute(2,0,1) # Swap color channels
+            #transformed_image_np = transformed_image.numpy()
+            transformed_image = torch.tensor(add_noise_to_image(transformed_image.numpy())).float()
         return (im_path,
                torch.tensor(transformed_image).float(),
                torch.from_numpy(np.array(im_class)).long())
@@ -148,9 +149,10 @@ class CarDataset(Dataset):
         return len(self.image_label_pairs)
 
 
-def make_dataloader(folder_names, data_path, batch_size, task):
+def make_dataloader(folder_names, data_path, batch_size, task, isTrain = False):
     """This function takes in a list of folders with images in them,
     the root directory of these images, and a batchsize and turns them into a dataloader"""
+    # added flag isTrain - only augment/transform training set, not validation/test set
 
     # Declare the transforms
     preprocessing_transforms = transforms.Compose(
@@ -171,7 +173,7 @@ def make_dataloader(folder_names, data_path, batch_size, task):
 
     # Create the datasets
     pairs = build_image_label_pairs(folder_names, data_path, task)
-    dataset = CarDataset(pairs, preprocessing_transforms)
+    dataset = CarDataset(pairs, preprocessing_transforms, isTrain)
 
     # Create the dataloaders
     return DataLoader(
@@ -206,7 +208,7 @@ def main(args):
 
     # Make dataloaders
     print("Making train and val dataloaders...")
-    train_loader = make_dataloader(train_folder_names, args.trainval_data_path, args.batch_size, args.task)
+    train_loader = make_dataloader(train_folder_names, args.trainval_data_path, args.batch_size, args.task, True)
     val_loader = make_dataloader(val_folder_names, args.trainval_data_path, args.batch_size, args.task)
 
     # Specify the GPUs to use
