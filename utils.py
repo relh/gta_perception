@@ -125,6 +125,6 @@ class Runner(object):
             if not model_out_path.exists():
                 model_out_path.mkdir()
             if self.best_acc < sum(acc):
-                torch.save(state, model_out_path / "model_epoch_best.pth")
+                torch.save(state, model_out_path / "model_epoch_9999.pth")
                 self.best_acc = sum(acc)
             torch.save(state, model_out_path / "model_epoch_{}.pth".format(epoch))
