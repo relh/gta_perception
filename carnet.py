@@ -229,7 +229,7 @@ def main(args):
                                                    dropout_p=args.dropout_p, num_classes=3),
                                                    device_ids=gpus)
     elif args.task == 3 or args.task == 4:
-      model = make_model('inception_v4', num_classes=23, dropout_p=args.dropout_p, pretrained=True)
+      model = make_model(args.model, num_classes=23, dropout_p=args.dropout_p, pretrained=True)
       #model = make_model('resnet18', num_classes=23, dropout_p=args.dropout_p, pretrained=True)
       #model = make_model('resnext101_32x4d', num_classes=23, dropout_p=args.dropout_p, pretrained=True)
     # Load an existing model, be careful with train/validation
@@ -247,7 +247,8 @@ def main(args):
     print("Creating optimizer and scheduler...")
     if args.task == 4:
       optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
-      scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5) # Decay the LR
+      #scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5, verbose=True) # Decay the LR
+      scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.3, patience=10, verbose=True)
     else:
       optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=args.weight_decay, amsgrad=True)
       scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=5, verbose=True)
@@ -283,7 +284,7 @@ def main(args):
             sub.write('guid/image,label\n')
             for name, val in outputs:
                 # Build path
-                mod_name = name.split('/')[2] + '/' + name.split('/')[3].split('_')[0]
+                mod_name = name.split('/')[3] + '/' + name.split('/')[4].split('_')[0]
                 mod_val = int(list_mapping[int(val)])
 
                 # Print and write row
@@ -298,13 +299,13 @@ if __name__ == '__main__':
     import argparse
 
     p = argparse.ArgumentParser()
-    p.add_argument("--trainval_data_path", default='./trainval/', type=str, help="carnet trainval data_path")
-    p.add_argument("--test_data_path", default='./test/', type=str, help="carnet test data_path")
-    p.add_argument("--trainval_split_percentage", default=0.95, type=float, help="percentage of data to use in training")
+    p.add_argument("--trainval_data_path", default='/hdd/trainval/', type=str, help="carnet trainval data_path")
+    p.add_argument("--test_data_path", default='/hdd/test/', type=str, help="carnet test data_path")
+    p.add_argument("--trainval_split_percentage", default=0.90, type=float, help="percentage of data to use in training")
 
     # Increasing these adds regularization
-    p.add_argument("--batch_size", default=25, type=int, help="batch size")
-    p.add_argument("--dropout_p", default=0.30, type=float, help="final layer p of neurons to drop")
+    p.add_argument("--batch_size", default=24, type=int, help="batch size")
+    p.add_argument("--dropout_p", default=0.20, type=float, help="final layer p of neurons to drop")
     p.add_argument("--weight_decay", default=1e-3, type=float, help="weight decay")
 
     # Increasing this increases model ability 
@@ -312,12 +313,13 @@ if __name__ == '__main__':
     p.add_argument("--lr", default=1e-3, type=float, help="learning rate")
     p.add_argument("--momentum", default=0.9, type=float, help="momentum value")
 
-    p.add_argument("--save_dir", default='models/v73', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v72', type=str, help="what model dir to load")
+    p.add_argument("--save_dir", default='models/v41', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v41', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
-    p.add_argument("--num_epoch", default=30, type=int, help="number of epochs to train")
-    p.add_argument("--modes", default="Train|Test", type=str, help="string containing modes")
+    p.add_argument("--num_epoch", default=100, type=int, help="number of epochs to train")
+    p.add_argument("--modes", default='Train|Test', type=str, help="string containing modes")
 
     p.add_argument("--task", default=4, type=int, help="what task to train a model, or pretrained model")
+    p.add_argument("--model", default='inception_v4', type=str, help="what pretrained model to start with")
     args = p.parse_args()
     main(args)
