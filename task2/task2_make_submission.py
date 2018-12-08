@@ -1,9 +1,9 @@
 import os
 
 # The precomputed centroids
-x = str(-.1775)
-y = str(-.2550)
-z = str(3.6114)
+x = str(-.1428)
+y = str(-.3049)
+z = str(3.6890)
 root = '/hdd/test/'
 
 with open('submission_task2.csv', 'w') as sub:

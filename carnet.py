@@ -190,6 +190,7 @@ def main(args):
     building dataloaders, building a model, loading a model, training a model, testing a model, and writing
     a submission"""
 
+
     # List the trainval folders
     print("Load trainval data...")
     trainval_folder_names = [x for x in os.listdir(args.trainval_data_path)
@@ -225,8 +226,7 @@ def main(args):
                                                    device_ids=gpus)
     elif args.task == 2:
       # TODO make this use MSE and have 3 heads, one for X,Y,Z
-      model = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks,
-                                                   dropout_p=args.dropout_p, num_classes=3),
+      model = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks, dropout_p=args.dropout_p, num_classes=3),
                                                    device_ids=gpus)
     elif args.task == 3 or args.task == 4:
       model = make_model(args.model, num_classes=23, dropout_p=args.dropout_p, pretrained=True)
