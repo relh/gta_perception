@@ -190,6 +190,7 @@ def main(args):
     building dataloaders, building a model, loading a model, training a model, testing a model, and writing
     a submission"""
 
+
     # List the trainval folders
     print("Load trainval data...")
     trainval_folder_names = [x for x in os.listdir(args.trainval_data_path)
@@ -304,7 +305,7 @@ if __name__ == '__main__':
 
     # Increasing these adds regularization
     p.add_argument("--batch_size", default=25, type=int, help="batch size")
-    p.add_argument("--dropout_p", default=0.30, type=float, help="final layer p of neurons to drop")
+    p.add_argument("--dropout_p", default=0.40, type=float, help="final layer p of neurons to drop")
     p.add_argument("--weight_decay", default=1e-3, type=float, help="weight decay")
 
     # Increasing this increases model ability 
