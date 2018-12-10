@@ -93,26 +93,26 @@ class Runner(object):
           with open('test_track.csv', 'a') as f:
             f.write(f">>>[{mode}] epoch: {self.epoch} loss: {sum(loop_loss):.2f}/accuracy: {sum(accuracy_shrunk) / len(data_loader.dataset):.2%}\n")
         if is_train:
-          return loop_loss, accuracy_shrunk, None
+          return loop_loss, accuracy_shrunk, None, None
         else:
-          return loop_loss, accuracy_shrunk, outputs
+          return loop_loss, accuracy_shrunk, outputs, output.data
 
     def train(self, data_loader, batch_size):
         self.model.train()
         with torch.enable_grad():
-            loss, accuracy, _ = self._iteration(data_loader, batch_size)
+            loss, accuracy, _, _ = self._iteration(data_loader, batch_size)
 
     def test(self, data_loader, batch_size):
         self.model.eval()
         with torch.no_grad():
-            loss, accuracy, outputs = self._iteration(data_loader, batch_size, is_train=False)
-        return loss, accuracy, outputs
+            loss, accuracy, outputs, logits = self._iteration(data_loader, batch_size, is_train=False)
+        return loss, accuracy, outputs, logits
 
     def loop(self, epochs, train_data, test_data, scheduler, batch_size):
         for ep in range(1, epochs + 1):
             self.epoch = ep
             self.train(train_data, batch_size)
-            loss, accuracy, outputs = self.test(test_data, batch_size)
+            loss, accuracy, outputs, logits = self.test(test_data, batch_size)
             if scheduler is not None:
                 scheduler.step(sum(loss))
             if ep % self.save_freq:

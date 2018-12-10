@@ -275,13 +275,15 @@ def main(args):
         print("Making test dataloaders...")
         test_loader = make_dataloader(test_folder_names, args.test_data_path, args.batch_size, args.task)
 
+        save_path = args.save_dir.split('/')[-1] + '---' + args.model + '---' + str(args.load_epoch)
         # Run the dataloader through the neural network
         print("Conducting a test...")
-        _, _, outputs = runner.test(test_loader, args.batch_size)
+        _, _, outputs, logits = runner.test(test_loader, args.batch_size)
 
         # Write the submission to CSV
         print("Writing a submission to \"submission_task1.csv\"...")
-        with open('submission_task1.csv', 'w') as sub:
+        with open('logits/'+save_path+'.csv', 'w') as logit_file:
+          with open('submission_task1.csv', 'w') as sub:
             sub.write('guid/image,label\n')
             for name, val in outputs:
                 # Build path
@@ -291,6 +293,7 @@ def main(args):
                 # Print and write row
                 print(mod_name + ',' + str(mod_val))
                 sub.write(mod_name + ',' + str(mod_val) + '\n')
+                logit_file.write(str(torch.nn.functional.softmax(logits).cpu().numpy()) + '\n')
         print('Done!')
 
 
