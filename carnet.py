@@ -292,20 +292,22 @@ def main(args):
         # Write the submission to CSV
         test_logits = []
         print("Writing a submission to \"submission_task1.csv\"...")
-        with open('logits/'+save_path+'.csv', 'w') as logit_file:
-          with open('submission_task1.csv', 'w') as sub:
-            sub.write('guid/image,label\n')
-            for name, val in outputs:
-                # Build path
-                mod_name = name.split('/')[3] + '/' + name.split('/')[4].split('_')[0]
-                mod_val = int(list_mapping[int(val)])
+        with open('submission_task1.csv', 'w') as sub:
+          sub.write('guid/image,label\n')
+          for name, val in outputs:
+              # Build path
+              mod_name = name.split('/')[3] + '/' + name.split('/')[4].split('_')[0]
+              mod_val = int(list_mapping[int(val)])
 
-                # Print and write row
-                print(mod_name + ',' + str(mod_val))
-                sub.write(mod_name + ',' + str(mod_val) + '\n')
-                test_logits = numpy.append(test_logits, torch.nn.functional.softmax(logits).cpu().numpy())
-                
-                logit_file.write(str(torch.nn.functional.softmax(logits).cpu().numpy()) + '\n')
+              # Print and write row
+              print(mod_name + ',' + str(mod_val))
+              sub.write(mod_name + ',' + str(mod_val) + '\n')
+              test_logits = np.append(test_logits, torch.nn.functional.softmax(logits).cpu().numpy())
+        np.save('logits/'+save_path+'.npy', test_logits)
+
+        # TODO average multiple logits results
+        # This function loads these logits but they should be reshaped with .reshape(-1, 23)
+        # np.load('logits/'+save_path+'.npy')
         print('Done!')
 
 
@@ -329,13 +331,13 @@ if __name__ == '__main__':
     p.add_argument("--lr", default=1e-4, type=float, help="learning rate")
     p.add_argument("--momentum", default=0.9, type=float, help="momentum value")
 
-    p.add_argument("--save_dir", default='models/v44', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v44', type=str, help="what model dir to load")
+    p.add_argument("--save_dir", default='models/v45', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v45', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
-    p.add_argument("--num_epoch", default=1, type=int, help="number of epochs to train")
+    p.add_argument("--num_epoch", default=10, type=int, help="number of epochs to train")
     p.add_argument("--modes", default='Train|Test', type=str, help="string containing modes")
 
     p.add_argument("--task", default=4, type=int, help="what task to train a model, or pretrained model")
-    p.add_argument("--model", default='se_resnext50_32x4d', type=str, help="what pretrained model to start with")
+    p.add_argument("--model", default='inception_v4', type=str, help="what pretrained model to start with")
     args = p.parse_args()
     main(args)
