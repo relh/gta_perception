@@ -185,11 +185,40 @@ def make_dataloader(folder_names, data_path, batch_size, task, isTrain = False):
     )
 
 
+def build_model(args, gpus):
+    # Build the model to run
+    print("Building a model...")
+    if args.task == 1:
+      model = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks,
+                                                   dropout_p=args.dropout_p, num_classes=23),
+                                                   device_ids=gpus)
+    elif args.task == 2:
+      # TODO make this use MSE and have 3 heads, one for X,Y,Z
+      model = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks, dropout_p=args.dropout_p, num_classes=3),
+                                                   device_ids=gpus)
+    elif args.task == 3 or args.task == 4:
+      model = make_model(args.model, num_classes=23, dropout_p=args.dropout_p, pretrained=True)
+      #model = make_model('resnet18', num_classes=23, dropout_p=args.dropout_p, pretrained=True)
+      #model = make_model('resnext101_32x4d', num_classes=23, dropout_p=args.dropout_p, pretrained=True)
+
+    return model
+
+def load_model(args, model, load_epoch):
+    # Load an existing model, be careful with train/validation
+    if load_epoch > 0:
+        print("Loading a model...")
+        details = torch.load(args.load_dir + "/model_epoch_{}.pth".format(str(load_epoch)))
+
+        # Saving models can be weird, so be careful using these
+        new_details = dict([(k, v) for k, v in details['weight'].items()])
+        model.load_state_dict(new_details)
+    return model
+
+
 def main(args):
     """This major function controls finding data, splitting train and validation data, building datasets,
     building dataloaders, building a model, loading a model, training a model, testing a model, and writing
     a submission"""
-
 
     # List the trainval folders
     print("Load trainval data...")
@@ -218,37 +247,16 @@ def main(args):
     gpus = list(range(torch.cuda.device_count()))
     print('--- GPUS: {} ---'.format(str(gpus)))
 
-    # Build the model to run
-    print("Building a model...")
-    if args.task == 1:
-      model = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks,
-                                                   dropout_p=args.dropout_p, num_classes=23),
-                                                   device_ids=gpus)
-    elif args.task == 2:
-      # TODO make this use MSE and have 3 heads, one for X,Y,Z
-      model = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks, dropout_p=args.dropout_p, num_classes=3),
-                                                   device_ids=gpus)
-    elif args.task == 3 or args.task == 4:
-      model = make_model(args.model, num_classes=23, dropout_p=args.dropout_p, pretrained=True)
-      #model = make_model('resnet18', num_classes=23, dropout_p=args.dropout_p, pretrained=True)
-      #model = make_model('resnext101_32x4d', num_classes=23, dropout_p=args.dropout_p, pretrained=True)
-    # Load an existing model, be careful with train/validation
-    if args.load_epoch > 0:
-        print("Loading a model...")
-        details = torch.load(args.load_dir + "/model_epoch_{}.pth".format(str(args.load_epoch)))
-
-        # Saving models can be weird, so be careful using these
-        #new_details = dict([(k[7:], v) for k, v in details['weight'].items()])
-        #new_details = dict([("module."+k, v) for k, v in details['weight'].items()])
-        new_details = dict([(k, v) for k, v in details['weight'].items()])
-        model.load_state_dict(new_details)
+    # Build and load the model
+    model = build_model(args, gpus)
+    model = load_model(args, model, args.load_epoch)
 
     # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
+
     print("Creating optimizer and scheduler...")
     if args.task == 4:
-      #optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
-      optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=args.weight_decay, amsgrad=True)
-      #scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5, verbose=True) # Decay the LR
+      optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
+      #optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=args.weight_decay, amsgrad=True)
       scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.3, patience=10, verbose=True)
     else:
       optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=args.weight_decay, amsgrad=True)
@@ -269,6 +277,7 @@ def main(args):
                         if os.path.isdir(os.path.join(args.test_data_path, x))]
         
         # Switch to eval mode
+        model = load_model(args, model, 9999)
         model.eval()
 
         # Make test dataloader
@@ -281,6 +290,7 @@ def main(args):
         _, _, outputs, logits = runner.test(test_loader, args.batch_size)
 
         # Write the submission to CSV
+        test_logits = []
         print("Writing a submission to \"submission_task1.csv\"...")
         with open('logits/'+save_path+'.csv', 'w') as logit_file:
           with open('submission_task1.csv', 'w') as sub:
@@ -293,6 +303,8 @@ def main(args):
                 # Print and write row
                 print(mod_name + ',' + str(mod_val))
                 sub.write(mod_name + ',' + str(mod_val) + '\n')
+                test_logits = numpy.append(test_logits, torch.nn.functional.softmax(logits).cpu().numpy())
+                
                 logit_file.write(str(torch.nn.functional.softmax(logits).cpu().numpy()) + '\n')
         print('Done!')
 
@@ -305,7 +317,7 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser()
     p.add_argument("--trainval_data_path", default='/hdd/trainval/', type=str, help="carnet trainval data_path")
     p.add_argument("--test_data_path", default='/hdd/test/', type=str, help="carnet test data_path")
-    p.add_argument("--trainval_split_percentage", default=0.90, type=float, help="percentage of data to use in training")
+    p.add_argument("--trainval_split_percentage", default=0.80, type=float, help="percentage of data to use in training")
 
     # Increasing these adds regularization
     p.add_argument("--batch_size", default=16, type=int, help="batch size")
@@ -317,11 +329,11 @@ if __name__ == '__main__':
     p.add_argument("--lr", default=1e-4, type=float, help="learning rate")
     p.add_argument("--momentum", default=0.9, type=float, help="momentum value")
 
-    p.add_argument("--save_dir", default='models/v41', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v41', type=str, help="what model dir to load")
-    p.add_argument("--load_epoch", default=1, type=int, help="what epoch to load, -1 for none")
-    p.add_argument("--num_epoch", default=100, type=int, help="number of epochs to train")
-    p.add_argument("--modes", default='Test', type=str, help="string containing modes")
+    p.add_argument("--save_dir", default='models/v44', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v44', type=str, help="what model dir to load")
+    p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
+    p.add_argument("--num_epoch", default=1, type=int, help="number of epochs to train")
+    p.add_argument("--modes", default='Train|Test', type=str, help="string containing modes")
 
     p.add_argument("--task", default=4, type=int, help="what task to train a model, or pretrained model")
     p.add_argument("--model", default='se_resnext50_32x4d', type=str, help="what pretrained model to start with")
