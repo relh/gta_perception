@@ -2,6 +2,7 @@ import csv
 import os
 import pickle
 import random
+import traceback
 
 import numpy as np
 import torch
@@ -252,6 +253,7 @@ def main(args):
     model = load_model(args, model, args.load_epoch)
 
     # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
+    args.save_path = save_path = args.save_dir.split('/')[-1] + '---' + args.model + '---' + str(args.load_epoch)
 
     print("Creating optimizer and scheduler...")
     if args.task == 4:
@@ -284,7 +286,6 @@ def main(args):
         print("Making test dataloaders...")
         test_loader = make_dataloader(test_folder_names, args.test_data_path, args.batch_size, args.task)
 
-        save_path = args.save_dir.split('/')[-1] + '---' + args.model + '---' + str(args.load_epoch)
         # Run the dataloader through the neural network
         print("Conducting a test...")
         _, _, outputs, logits = runner.test(test_loader, args.batch_size)
@@ -300,14 +301,17 @@ def main(args):
               mod_val = int(list_mapping[int(val)])
 
               # Print and write row
-              print(mod_name + ',' + str(mod_val))
+              #print(mod_name + ',' + str(mod_val))
               sub.write(mod_name + ',' + str(mod_val) + '\n')
               test_logits = np.append(test_logits, torch.nn.functional.softmax(logits).cpu().numpy())
         np.save('logits/'+save_path+'.npy', test_logits)
 
         # TODO average multiple logits results
         # This function loads these logits but they should be reshaped with .reshape(-1, 23)
-        # np.load('logits/'+save_path+'.npy')
+        # test_logits = np.load('logits/'+save_path+'.npy')
+        print("0s: {}".format(str(np.count_nonzero(test_logits == 0.0)))) 
+        print("1s: {}".format(str(np.count_nonzero(test_logits == 1.0)))) 
+        print("2s: {}".format(str(np.count_nonzero(test_logits == 2.0)))) 
         print('Done!')
 
 
@@ -323,16 +327,16 @@ if __name__ == '__main__':
 
     # Increasing these adds regularization
     p.add_argument("--batch_size", default=16, type=int, help="batch size")
-    p.add_argument("--dropout_p", default=0.30, type=float, help="final layer p of neurons to drop")
-    p.add_argument("--weight_decay", default=1e-3, type=float, help="weight decay")
+    p.add_argument("--dropout_p", default=0.20, type=float, help="final layer p of neurons to drop")
+    p.add_argument("--weight_decay", default=1e-4, type=float, help="weight decay")
 
     # Increasing this increases model ability 
     p.add_argument("--model_num_blocks", default=3, type=int, help="how deep the network is")
-    p.add_argument("--lr", default=1e-4, type=float, help="learning rate")
+    p.add_argument("--lr", default=1e-3, type=float, help="learning rate")
     p.add_argument("--momentum", default=0.9, type=float, help="momentum value")
 
-    p.add_argument("--save_dir", default='models/v45', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v45', type=str, help="what model dir to load")
+    p.add_argument("--save_dir", default='models/v65', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v65', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=10, type=int, help="number of epochs to train")
     p.add_argument("--modes", default='Train|Test', type=str, help="string containing modes")
@@ -340,4 +344,24 @@ if __name__ == '__main__':
     p.add_argument("--task", default=4, type=int, help="what task to train a model, or pretrained model")
     p.add_argument("--model", default='inception_v4', type=str, help="what pretrained model to start with")
     args = p.parse_args()
-    main(args)
+
+    model_list = ['resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152',
+                  'densenet121', 'densenet169', 'densenet201', 'densenet161',
+                  'inception_v3',
+                  'alexnet', 'xception'
+                  'nasnetalarge',
+                  'nasnetamobile', 'pnasnet5large',
+                  'inceptionresnetv2', 'polynet',
+                  'dpn68', 'dpn68b', 'dpn92', 'dpn98', 'dpn131', 'dpn107']
+
+    for i in range(100):
+      args.save_dir = 'models/v' + str(65 + i)
+      args.load_dir = 'models/v' + str(65 + i)
+      args.batch_size = 8 # To be safe
+      args.model = random.choice(model_list)
+      try:
+        main(args)
+      except Exception as e:
+        print('Oops failed!')
+        traceback.print_exc()
+
