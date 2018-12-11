@@ -357,8 +357,8 @@ if __name__ == '__main__':
                   'dpn68', 'dpn68b', 'dpn92', 'dpn98', 'dpn131', 'dpn107']
 
     for i in range(100):
-      args.save_dir = 'models/v' + str(101 + i)
-      args.load_dir = 'models/v' + str(101 + i)
+      args.save_dir = 'models/v' + str(151 + i)
+      args.load_dir = 'models/v' + str(151 + i)
       args.batch_size = 10 # To be not that safe
       args.model = random.choice(model_list)
       try:
