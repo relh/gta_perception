@@ -338,8 +338,8 @@ if __name__ == '__main__':
     p.add_argument("--save_dir", default='models/v378', type=str, help="what model dir to save")
     p.add_argument("--load_dir", default='models/v378', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
-    p.add_argument("--num_epoch", default=1, type=int, help="number of epochs to train")
-    p.add_argument("--modes", default='Test', type=str, help="string containing modes")
+    p.add_argument("--num_epoch", default=7, type=int, help="number of epochs to train")
+    p.add_argument("--modes", default='Train|Test', type=str, help="string containing modes")
 
     p.add_argument("--task", default=4, type=int, help="what task to train a model, or pretrained model")
     p.add_argument("--model", default='resnet18', type=str, help="what pretrained model to start with")
