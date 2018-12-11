@@ -117,6 +117,7 @@ class Runner(object):
                 scheduler.step(sum(loss))
             if ep % self.save_freq:
                 self.save(ep, accuracy)
+        return self.best_acc
 
     def save(self, epoch, acc, **kwargs):
         if self.save_dir is not None:

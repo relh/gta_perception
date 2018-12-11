@@ -253,7 +253,6 @@ def main(args):
     model = load_model(args, model, args.load_epoch)
 
     # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
-    args.save_path = save_path = args.save_dir.split('/')[-1] + '---' + args.model + '---' + str(args.load_epoch)
 
     print("Creating optimizer and scheduler...")
     if args.task == 4:
@@ -268,9 +267,12 @@ def main(args):
     # This trainer class does all the work
     print("Instantiating runner...")
     runner = Runner(model, optimizer, sum_cross_entropy, args.save_dir)
+    best_acc = 0.0
     if "train" in args.modes.lower():
         print("Begin training...")
-        runner.loop(args.num_epoch, train_loader, val_loader, scheduler, args.batch_size)
+        best_acc = runner.loop(args.num_epoch, train_loader, val_loader, scheduler, args.batch_size)
+
+    args.save_path = save_path = args.save_dir.split('/')[-1] + '-' + args.model + '-' + str(best_acc)
 
     if "test" in args.modes.lower():
         print("Load test data...")
@@ -328,17 +330,17 @@ if __name__ == '__main__':
     # Increasing these adds regularization
     p.add_argument("--batch_size", default=16, type=int, help="batch size")
     p.add_argument("--dropout_p", default=0.20, type=float, help="final layer p of neurons to drop")
-    p.add_argument("--weight_decay", default=1e-4, type=float, help="weight decay")
+    p.add_argument("--weight_decay", default=1e-3, type=float, help="weight decay")
 
     # Increasing this increases model ability 
     p.add_argument("--model_num_blocks", default=3, type=int, help="how deep the network is")
     p.add_argument("--lr", default=1e-3, type=float, help="learning rate")
     p.add_argument("--momentum", default=0.9, type=float, help="momentum value")
 
-    p.add_argument("--save_dir", default='models/v65', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v65', type=str, help="what model dir to load")
+    p.add_argument("--save_dir", default='models/v76', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v76', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
-    p.add_argument("--num_epoch", default=10, type=int, help="number of epochs to train")
+    p.add_argument("--num_epoch", default=7, type=int, help="number of epochs to train")
     p.add_argument("--modes", default='Train|Test', type=str, help="string containing modes")
 
     p.add_argument("--task", default=4, type=int, help="what task to train a model, or pretrained model")
