@@ -345,20 +345,18 @@ if __name__ == '__main__':
     p.add_argument("--model", default='resnet18', type=str, help="what pretrained model to start with")
     args = p.parse_args()
 
-    main(args)
-    '''
     model_list = ['resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152',
                     'densenet121', 'densenet169', 'densenet201', 'densenet161',
                     'inception_v3',
                     'alexnet', 'xception'
                     'nasnetalarge',
                     'nasnetamobile', 'pnasnet5large',
-                    'inceptionresnetv2', 'polynet',
-                    'dpn68', 'dpn68b', 'dpn92', 'dpn98', 'dpn131', 'dpn107']
+                    'inceptionresnetv2', 'polynet']
+                    #'dpn68', 'dpn68b', 'dpn92', 'dpn98', 'dpn131', 'dpn107']
 
     for i in range(100):
-      args.save_dir = 'models/v' + str(301 + i)
-      args.load_dir = 'models/v' + str(301 + i)
+      args.save_dir = 'models/v' + str(310 + i)
+      args.load_dir = 'models/v' + str(310 + i)
       args.batch_size = 10 # To be not that safe
       args.model = random.choice(model_list)
       try:
@@ -366,5 +364,3 @@ if __name__ == '__main__':
       except Exception as e:
         print('Oops failed!')
         traceback.print_exc()
-
-    '''
