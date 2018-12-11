@@ -1,1 +1,4 @@
 imgaug
+cnn_finetune
+tqdm
+opencv-python
