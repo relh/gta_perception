@@ -68,7 +68,7 @@ class Runner(object):
             if not is_train:
                 for p in range(len(path)):
                   outputs.append((path[p], int(output.data.max(1)[1][p])))
-                  outputs_data.append((path[p], output.data[p, :])))
+                  outputs_data.append((path[p], torch.nn.functional.softmax(output.data[p, :])))
 
             loss = self.loss_f(output, target)
             loop_loss.append(loss.data.item() / len(data_loader))
