@@ -15,7 +15,6 @@ from torch import nn
 from torch.utils.data import DataLoader, Dataset, random_split
 from torchvision import datasets, transforms
 
-from se_resnet import se_resnet_custom
 from utils import Runner, sum_cross_entropy, get_classes_to_label_map
 
 from cnn_finetune import make_model
@@ -191,11 +190,13 @@ def build_model(args, gpus):
     # Build the model to run
     print("Building a model...")
     if args.task == 1:
+      from se_resnet import se_resnet_custom
       model = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks,
                                                    dropout_p=args.dropout_p, num_classes=23),
                                                    device_ids=gpus)
     elif args.task == 2:
       # TODO make this use MSE and have 3 heads, one for X,Y,Z
+      from se_resnet import se_resnet_custom
       model = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks, dropout_p=args.dropout_p, num_classes=3),
                                                    device_ids=gpus)
     elif args.task == 3 or args.task == 4:
@@ -355,9 +356,9 @@ if __name__ == '__main__':
                     #'dpn68', 'dpn68b', 'dpn92', 'dpn98', 'dpn131', 'dpn107']
 
     for i in range(100):
-      args.save_dir = 'models/v' + str(310 + i)
-      args.load_dir = 'models/v' + str(310 + i)
-      args.batch_size = 10 # To be not that safe
+      args.save_dir = 'models/v' + str(210 + i)
+      args.load_dir = 'models/v' + str(210 + i)
+      args.batch_size = 5 # To be not that safe
       args.model = random.choice(model_list)
       try:
         main(args)

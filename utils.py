@@ -92,7 +92,7 @@ class Runner(object):
 
         mode = "train" if is_train else "test/val"
         if mode == "test/val":
-          with open('test_track.csv', 'a') as f:
+          with open('csvs/test_track.csv', 'a') as f:
             f.write(f">>>[{mode}] epoch: {self.epoch} loss: {sum(loop_loss):.2f}/accuracy: {sum(accuracy_shrunk) / len(data_loader.dataset):.2%}\n")
         if is_train:
           return loop_loss, accuracy_shrunk, None, None
