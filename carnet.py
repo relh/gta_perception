@@ -337,8 +337,8 @@ if __name__ == '__main__':
     p.add_argument("--lr", default=1e-3, type=float, help="learning rate")
     p.add_argument("--momentum", default=0.9, type=float, help="momentum value")
 
-    p.add_argument("--save_dir", default='models/v76', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v76', type=str, help="what model dir to load")
+    p.add_argument("--save_dir", default='models/v78', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v78', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=7, type=int, help="number of epochs to train")
     p.add_argument("--modes", default='Train|Test', type=str, help="string containing modes")
@@ -357,9 +357,9 @@ if __name__ == '__main__':
                   'dpn68', 'dpn68b', 'dpn92', 'dpn98', 'dpn131', 'dpn107']
 
     for i in range(100):
-      args.save_dir = 'models/v' + str(65 + i)
-      args.load_dir = 'models/v' + str(65 + i)
-      args.batch_size = 8 # To be safe
+      args.save_dir = 'models/v' + str(78 + i)
+      args.load_dir = 'models/v' + str(78 + i)
+      args.batch_size = 10 # To be not that safe
       args.model = random.choice(model_list)
       try:
         main(args)
