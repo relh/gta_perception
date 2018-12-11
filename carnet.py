@@ -268,7 +268,7 @@ def main(args):
     # This trainer class does all the work
     print("Instantiating runner...")
     runner = Runner(model, optimizer, sum_cross_entropy, args.save_dir)
-    best_acc = 0.0
+    best_acc = 0
     if "train" in args.modes.lower():
         print("Begin training... {}".format(str(args.model)))
         best_acc = runner.loop(args.num_epoch, train_loader, val_loader, scheduler, args.batch_size)

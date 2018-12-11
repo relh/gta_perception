@@ -57,6 +57,7 @@ class Runner(object):
         accuracy = []
         accuracy_shrunk = []
         outputs = []
+        outputs_data = []
         pbar = tqdm(data_loader, ncols=40, disable=False)
         for i, (path, data, target) in enumerate(pbar):
             if self.cuda:
@@ -67,6 +68,7 @@ class Runner(object):
             if not is_train:
                 for p in range(len(path)):
                   outputs.append((path[p], int(output.data.max(1)[1][p])))
+                  outputs_data.append((path[p], output.data[p, :])))
 
             loss = self.loss_f(output, target)
             loop_loss.append(loss.data.item() / len(data_loader))
@@ -95,7 +97,7 @@ class Runner(object):
         if is_train:
           return loop_loss, accuracy_shrunk, None, None
         else:
-          return loop_loss, accuracy_shrunk, outputs, output.data
+          return loop_loss, accuracy_shrunk, outputs, outputs_data
 
     def train(self, data_loader, batch_size):
         self.model.train()
