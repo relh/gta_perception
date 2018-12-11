@@ -3,6 +3,7 @@ import os
 import pickle
 import random
 import traceback
+from pdb import set_trace
 
 import numpy as np
 import torch
@@ -295,17 +296,18 @@ def main(args):
         # Write the submission to CSV
         test_logits = []
         print("Writing a submission to \"submission_task1.csv\"...")
-        with open('submission_task1.csv', 'w') as sub:
+        with open('csvs/'+save_path+'.csv', 'w') as sub:
           sub.write('guid/image,label\n')
-          for name, val in outputs:
+          for i, (name, val) in enumerate(outputs):
               # Build path
               mod_name = name.split('/')[3] + '/' + name.split('/')[4].split('_')[0]
               mod_val = int(list_mapping[int(val)])
+              set_trace()
 
               # Print and write row
               #print(mod_name + ',' + str(mod_val))
               sub.write(mod_name + ',' + str(mod_val) + '\n')
-              test_logits = np.append(test_logits, torch.nn.functional.softmax(logits).cpu().numpy())
+              test_logits = np.append(test_logits, torch.nn.functional.softmax(logits[i]).cpu().numpy())
         np.save('logits/'+save_path+'.npy', test_logits)
 
         # TODO average multiple logits results
@@ -340,7 +342,7 @@ if __name__ == '__main__':
     p.add_argument("--save_dir", default='models/v78', type=str, help="what model dir to save")
     p.add_argument("--load_dir", default='models/v78', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
-    p.add_argument("--num_epoch", default=7, type=int, help="number of epochs to train")
+    p.add_argument("--num_epoch", default=1, type=int, help="number of epochs to train")
     p.add_argument("--modes", default='Train|Test', type=str, help="string containing modes")
 
     p.add_argument("--task", default=4, type=int, help="what task to train a model, or pretrained model")
@@ -357,8 +359,8 @@ if __name__ == '__main__':
                   'dpn68', 'dpn68b', 'dpn92', 'dpn98', 'dpn131', 'dpn107']
 
     for i in range(100):
-      args.save_dir = 'models/v' + str(78 + i)
-      args.load_dir = 'models/v' + str(78 + i)
+      args.save_dir = 'models/v' + str(80 + i)
+      args.load_dir = 'models/v' + str(80 + i)
       args.batch_size = 5 # To be not that safe
       args.model = random.choice(model_list)
       try:
