@@ -297,7 +297,7 @@ def main(args):
         print("Writing a submission to \"submission_task1.csv\"...")
         with open('csvs/'+save_path+'.csv', 'w') as sub:
           sub.write('guid/image,label\n')
-          for i, (name, val) in enumerate(outputs):
+          for name, val in outputs:
               # Build path
               mod_name = name.split('/')[3] + '/' + name.split('/')[4].split('_')[0]
               mod_val = int(list_mapping[int(val)])
@@ -321,8 +321,8 @@ if __name__ == '__main__':
     import argparse
 
     p = argparse.ArgumentParser()
-    p.add_argument("--trainval_data_path", default='/hdd/trainval/', type=str, help="carnet trainval data_path")
-    p.add_argument("--test_data_path", default='/hdd/test/', type=str, help="carnet test data_path")
+    p.add_argument("--trainval_data_path", default='/home/ubuntu/trainval/', type=str, help="carnet trainval data_path")
+    p.add_argument("--test_data_path", default='/home/ubuntu/test/', type=str, help="carnet test data_path")
     p.add_argument("--trainval_split_percentage", default=0.80, type=float, help="percentage of data to use in training")
 
     # Increasing these adds regularization
@@ -339,7 +339,7 @@ if __name__ == '__main__':
     p.add_argument("--load_dir", default='models/v78', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=1, type=int, help="number of epochs to train")
-    p.add_argument("--modes", default='Train|Test', type=str, help="string containing modes")
+    p.add_argument("--modes", default='Test', type=str, help="string containing modes")
 
     p.add_argument("--task", default=4, type=int, help="what task to train a model, or pretrained model")
     p.add_argument("--model", default='inception_v4', type=str, help="what pretrained model to start with")
@@ -360,9 +360,9 @@ if __name__ == '__main__':
       args.load_dir = 'models/v' + str(151 + i)
       args.batch_size = 50 # To be not that safe
       args.model = random.choice(model_list)
-      try:
-        main(args)
-      except Exception as e:
-        print('Oops failed!')
-        traceback.print_exc()
+      #try:
+      main(args)
+      #except Exception as e:
+      #  print('Oops failed!')
+      #  traceback.print_exc()
 
