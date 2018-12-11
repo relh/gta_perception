@@ -141,8 +141,8 @@ class CarDataset(Dataset):
         transformed_image = self.transforms(image_obj) # Apply transformations
         transformed_image.permute(2,0,1) # Swap color channels
         #transformed_image_np = transformed_image.numpy()
-        if self.isTrain :
-            transformed_image = torch.tensor(add_noise_to_image(transformed_image.numpy())).float()
+        #if self.isTrain :
+        #    transformed_image = torch.tensor(add_noise_to_image(transformed_image.numpy())).float()
         return (im_path,
                torch.tensor(transformed_image).float(),
                torch.from_numpy(np.array(im_class)).long())
