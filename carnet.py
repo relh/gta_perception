@@ -294,7 +294,6 @@ def main(args):
         _, _, outputs, logits = runner.test(test_loader, args.batch_size)
 
         # Write the submission to CSV
-        test_logits = []
         print("Writing a submission to \"submission_task1.csv\"...")
         with open('csvs/'+save_path+'.csv', 'w') as sub:
           sub.write('guid/image,label\n')
@@ -304,10 +303,8 @@ def main(args):
               mod_val = int(list_mapping[int(val)])
 
               # Print and write row
-              #print(mod_name + ',' + str(mod_val))
               sub.write(mod_name + ',' + str(mod_val) + '\n')
-              test_logits = np.append(test_logits, torch.nn.functional.softmax(logits[i]).cpu().numpy())
-        np.save('logits/'+save_path+'.npy', test_logits)
+        np.save('logits/'+save_path+'.npy', torch.nn.functional.softmax(logits).cpu().numpy())
 
         # TODO average multiple logits results
         # This function loads these logits but they should be reshaped with .reshape(-1, 23)
@@ -324,8 +321,8 @@ if __name__ == '__main__':
     import argparse
 
     p = argparse.ArgumentParser()
-    p.add_argument("--trainval_data_path", default='/home/ubuntu/trainval/', type=str, help="carnet trainval data_path")
-    p.add_argument("--test_data_path", default='/home/ubuntu/test/', type=str, help="carnet test data_path")
+    p.add_argument("--trainval_data_path", default='/hdd/trainval/', type=str, help="carnet trainval data_path")
+    p.add_argument("--test_data_path", default='/hdd/test/', type=str, help="carnet test data_path")
     p.add_argument("--trainval_split_percentage", default=0.80, type=float, help="percentage of data to use in training")
 
     # Increasing these adds regularization
