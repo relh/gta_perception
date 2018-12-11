@@ -190,15 +190,16 @@ def build_model(args, gpus):
     # Build the model to run
     print("Building a model...")
     if args.task == 1:
-      from se_resnet import se_resnet_custom
-      model = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks,
-                                                   dropout_p=args.dropout_p, num_classes=23),
-                                                   device_ids=gpus)
+      #from se_resnet import se_resnet_custom
+      #model = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks,
+      #                                             dropout_p=args.dropout_p, num_classes=23),
+      #                                             device_ids=gpus)
+      pass # TODO make model here
     elif args.task == 2:
       # TODO make this use MSE and have 3 heads, one for X,Y,Z
-      from se_resnet import se_resnet_custom
-      model = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks, dropout_p=args.dropout_p, num_classes=3),
-                                                   device_ids=gpus)
+      #from se_resnet import se_resnet_custom
+      #model = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks, dropout_p=args.dropout_p, num_classes=3), #device_ids=gpus)
+      pass # TODO make model here similar to task 3
     elif args.task == 3 or args.task == 4:
       model = make_model(args.model, num_classes=23, dropout_p=args.dropout_p, pretrained=True)
       #model = make_model('resnet18', num_classes=23, dropout_p=args.dropout_p, pretrained=True)
