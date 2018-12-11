@@ -296,7 +296,7 @@ def main(args):
         _, _, outputs, logits = runner.test(test_loader, args.batch_size)
 
         # Write the submission to CSV
-        print("Writing a submission to \"submission_task1.csv\"...")
+        print("Writing a submission to \"csvs/{}.csv\"...".format(save_path))
         with open('csvs/'+save_path+'.csv', 'w') as sub:
           sub.write('guid/image,label\n')
           for name, val in outputs:
