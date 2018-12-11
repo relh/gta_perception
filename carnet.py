@@ -304,7 +304,7 @@ def main(args):
 
               # Print and write row
               sub.write(mod_name + ',' + str(mod_val) + '\n')
-        np.save('logits/'+save_path+'.npy', logits.cpu().numpy())
+        np.save('logits/'+save_path+'.npy', np.array([l for p,l in logits]))
 
         # TODO average multiple logits results
         # This function loads these logits but they should be reshaped with .reshape(-1, 23)
@@ -326,7 +326,7 @@ if __name__ == '__main__':
     p.add_argument("--trainval_split_percentage", default=0.80, type=float, help="percentage of data to use in training")
 
     # Increasing these adds regularization
-    p.add_argument("--batch_size", default=16, type=int, help="batch size")
+    p.add_argument("--batch_size", default=50, type=int, help="batch size")
     p.add_argument("--dropout_p", default=0.20, type=float, help="final layer p of neurons to drop")
     p.add_argument("--weight_decay", default=1e-3, type=float, help="weight decay")
 
@@ -335,16 +335,18 @@ if __name__ == '__main__':
     p.add_argument("--lr", default=1e-3, type=float, help="learning rate")
     p.add_argument("--momentum", default=0.9, type=float, help="momentum value")
 
-    p.add_argument("--save_dir", default='models/v78', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v78', type=str, help="what model dir to load")
+    p.add_argument("--save_dir", default='models/v378', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v378', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=1, type=int, help="number of epochs to train")
-    p.add_argument("--modes", default='Train|Test', type=str, help="string containing modes")
+    p.add_argument("--modes", default='Test', type=str, help="string containing modes")
 
     p.add_argument("--task", default=4, type=int, help="what task to train a model, or pretrained model")
-    p.add_argument("--model", default='inception_v4', type=str, help="what pretrained model to start with")
+    p.add_argument("--model", default='resnet18', type=str, help="what pretrained model to start with")
     args = p.parse_args()
 
+    main(args)
+    '''
     model_list = ['resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152',
                     'densenet121', 'densenet169', 'densenet201', 'densenet161',
                     'inception_v3',
@@ -365,3 +367,4 @@ if __name__ == '__main__':
         print('Oops failed!')
         traceback.print_exc()
 
+    '''
