@@ -309,9 +309,9 @@ def main(args):
         # TODO average multiple logits results
         # This function loads these logits but they should be reshaped with .reshape(-1, 23)
         # test_logits = np.load('logits/'+save_path+'.npy')
-        print("0s: {}".format(str(np.count_nonzero(test_logits == 0.0)))) 
-        print("1s: {}".format(str(np.count_nonzero(test_logits == 1.0)))) 
-        print("2s: {}".format(str(np.count_nonzero(test_logits == 2.0)))) 
+        #print("0s: {}".format(str(np.count_nonzero(test_logits == 0.0)))) 
+        #print("1s: {}".format(str(np.count_nonzero(test_logits == 1.0)))) 
+        #print("2s: {}".format(str(np.count_nonzero(test_logits == 2.0)))) 
         print('Done!')
 
 
