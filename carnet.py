@@ -325,8 +325,8 @@ if __name__ == '__main__':
     import argparse
 
     p = argparse.ArgumentParser()
-    p.add_argument("--trainval_data_path", default='/hdd/trainval/', type=str, help="carnet trainval data_path")
-    p.add_argument("--test_data_path", default='/hdd/test/', type=str, help="carnet test data_path")
+    p.add_argument("--trainval_data_path", default='/home/ubuntu/trainval/', type=str, help="carnet trainval data_path")
+    p.add_argument("--test_data_path", default='/home/ubuntu/test/', type=str, help="carnet test data_path")
     p.add_argument("--trainval_split_percentage", default=0.80, type=float, help="percentage of data to use in training")
 
     # Increasing these adds regularization
