@@ -269,7 +269,7 @@ def main(args):
     runner = Runner(model, optimizer, sum_cross_entropy, args.save_dir)
     best_acc = 0.0
     if "train" in args.modes.lower():
-        print("Begin training...")
+        print("Begin training... {}".format(str(args.model)))
         best_acc = runner.loop(args.num_epoch, train_loader, val_loader, scheduler, args.batch_size)
 
     args.save_path = save_path = args.save_dir.split('/')[-1] + '-' + args.model + '-' + str(best_acc)
@@ -359,7 +359,7 @@ if __name__ == '__main__':
     for i in range(100):
       args.save_dir = 'models/v' + str(78 + i)
       args.load_dir = 'models/v' + str(78 + i)
-      args.batch_size = 10 # To be not that safe
+      args.batch_size = 5 # To be not that safe
       args.model = random.choice(model_list)
       try:
         main(args)
