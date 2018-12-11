@@ -321,8 +321,8 @@ if __name__ == '__main__':
     import argparse
 
     p = argparse.ArgumentParser()
-    p.add_argument("--trainval_data_path", default='/hdd/trainval/', type=str, help="carnet trainval data_path")
-    p.add_argument("--test_data_path", default='/hdd/test/', type=str, help="carnet test data_path")
+    p.add_argument("--trainval_data_path", default='/home/ubuntu/trainval/', type=str, help="carnet trainval data_path")
+    p.add_argument("--test_data_path", default='/home/ubuntu/test/', type=str, help="carnet test data_path")
     p.add_argument("--trainval_split_percentage", default=0.80, type=float, help="percentage of data to use in training")
 
     # Increasing these adds regularization
@@ -355,9 +355,9 @@ if __name__ == '__main__':
                     'dpn68', 'dpn68b', 'dpn92', 'dpn98', 'dpn131', 'dpn107']
 
     for i in range(100):
-      args.save_dir = 'models/v' + str(151 + i)
-      args.load_dir = 'models/v' + str(151 + i)
-      args.batch_size = 5 # To be not that safe
+      args.save_dir = 'models/v' + str(201 + i)
+      args.load_dir = 'models/v' + str(201 + i)
+      args.batch_size = 10 # To be not that safe
       args.model = random.choice(model_list)
       try:
         main(args)
