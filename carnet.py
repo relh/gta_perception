@@ -309,9 +309,9 @@ def main(args):
         # TODO average multiple logits results
         # This function loads these logits but they should be reshaped with .reshape(-1, 23)
         # test_logits = np.load('logits/'+save_path+'.npy')
-        print("0s: {}".format(str(np.count_nonzero(test_logits == 0.0)))) 
-        print("1s: {}".format(str(np.count_nonzero(test_logits == 1.0)))) 
-        print("2s: {}".format(str(np.count_nonzero(test_logits == 2.0)))) 
+        #print("0s: {}".format(str(np.count_nonzero(test_logits == 0.0)))) 
+        #print("1s: {}".format(str(np.count_nonzero(test_logits == 1.0)))) 
+        #print("2s: {}".format(str(np.count_nonzero(test_logits == 2.0)))) 
         print('Done!')
 
 
@@ -339,7 +339,7 @@ if __name__ == '__main__':
     p.add_argument("--load_dir", default='models/v78', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=1, type=int, help="number of epochs to train")
-    p.add_argument("--modes", default='Train|Test', type=str, help="string containing modes")
+    p.add_argument("--modes", default='Test', type=str, help="string containing modes")
 
     p.add_argument("--task", default=4, type=int, help="what task to train a model, or pretrained model")
     p.add_argument("--model", default='inception_v4', type=str, help="what pretrained model to start with")
@@ -360,9 +360,9 @@ if __name__ == '__main__':
       args.load_dir = 'models/v' + str(151 + i)
       args.batch_size = 50 # To be not that safe
       args.model = random.choice(model_list)
-      try:
-        main(args)
-      except Exception as e:
-        print('Oops failed!')
-        traceback.print_exc()
+      #try:
+      main(args)
+      #except Exception as e:
+      #  print('Oops failed!')
+      #  traceback.print_exc()
 
