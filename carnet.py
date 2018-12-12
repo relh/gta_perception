@@ -278,7 +278,7 @@ def main(args):
     best_acc = 0
     if "train" in args.modes.lower():
         print("Begin training... {} + {} + {} + {}"
-              .format(str(args.model), str(args.lr), str(args.weight_Decay), str(args.optimizer_string)))
+              .format(str(args.model), str(args.lr), str(args.weight_decay), str(args.optimizer_string)))
         best_acc = runner.loop(args.num_epoch, train_loader, val_loader, scheduler, args.batch_size)
 
     args.save_path = save_path = args.save_dir.split('/')[-1] + '-' + args.model + '-' + str(best_acc)
