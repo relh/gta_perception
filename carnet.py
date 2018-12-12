@@ -98,11 +98,46 @@ def add_noise_to_image(image):
     image = (image * 255).astype('uint8')
     return ((seq.augment_images(image))/255.0).astype('float64')
 
-def build_image_label_pairs(folders, data_path, task):
+def get_bin(num, xyz, bins):
+    minX = -90.4333 ; maxX = 93.6565
+    minY = -29.4479 ; maxY = 2.2364
+    minZ = 0.2135 ; maxZ = 146.7196
+
+    if xyz==1:
+        diff = (maxX - minX)/bins
+        for i in range(bins):
+            if num>=minX + i*diff and num <minX + (i+1)*diff:
+                out = i
+                break
+            else:
+                out = bins-1
+    elif xyz==2:
+        diff = (maxY - minY)/bins
+        for i in range(bins):
+            if num>=minY + i*diff and num <minY + (i+1)*diff:
+                out = i
+                break
+            else:
+                out = bins-1
+    elif xyz==3:
+        diff = (maxZ - minZ)/bins
+        for i in range(bins):
+            if num>=minZ + i*diff and num <minZ + (i+1)*diff:
+                out = i
+                break
+            else:
+                out = bins-1
+    else:
+        print("Input X=1, Y=2 or Z=3")
+
+    return out
+
+def build_image_label_pairs(folders, data_path, task, bins = 10):
     """This function takes in a set of folders and their root path. It returns a list 
     of tuples of (image paths, class label) where class label is either 0,1,2 as in classes.csv"""
 
     image_label_pairs = []
+
     # Iterate over the chosen folders
     for folder in folders:
         for file_name in os.listdir(os.path.join(data_path, folder)):
@@ -118,7 +153,12 @@ def build_image_label_pairs(folders, data_path, task):
 
                 # Append items to dataset
                 if task == 2:
-                  class_label = [int(x) for x in label_data[3:6]]
+                  x_label = get_bin(label_data[3], 1, bins)
+                  y_label = get_bin(label_data[4], 2, bins)
+                  z_label = get_bin(label_data[5], 3, bins)
+
+                  class_label = x_label
+
                 else:
                   # Index 0 is 23 classes, -1 is 3 classes 
                   class_label = int(label_data[9])
@@ -199,7 +239,9 @@ def build_model(args, gpus):
       # TODO make this use MSE and have 3 heads, one for X,Y,Z
       #from se_resnet import se_resnet_custom
       #model = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks, dropout_p=args.dropout_p, num_classes=3), #device_ids=gpus)
-      pass # TODO make model here similar to task 3
+      # pass # TODO make model here similar to task 3
+      model = make_model(args.model, num_classes=10, dropout_p=args.dropout_p, pretrained=True)
+
     elif args.task == 3 or args.task == 4:
       model = make_model(args.model, num_classes=23, dropout_p=args.dropout_p, pretrained=True)
       #model = make_model('resnet18', num_classes=23, dropout_p=args.dropout_p, pretrained=True)
@@ -355,14 +397,14 @@ if __name__ == '__main__':
                     'nasnetamobile', 'pnasnet5large',
                     'inceptionresnetv2', 'polynet']
                     #'dpn68', 'dpn68b', 'dpn92', 'dpn98', 'dpn131', 'dpn107']
-
-    for i in range(100):
-      args.save_dir = 'models/v' + str(210 + i)
-      args.load_dir = 'models/v' + str(210 + i)
-      args.batch_size = 5 # To be not that safe
-      args.model = random.choice(model_list)
-      try:
-        main(args)
-      except Exception as e:
-        print('Oops failed!')
-        traceback.print_exc()
+    main(args)                
+    # for i in range(100):
+    #   args.save_dir = 'models/v' + str(210 + i)
+    #   args.load_dir = 'models/v' + str(210 + i)
+    #   args.batch_size = 5 # To be not that safe
+    #   args.model = random.choice(model_list)
+    #   try:
+    #     main(args)
+    #   except Exception as e:
+    #     print('Oops failed!')
+    #     traceback.print_exc()

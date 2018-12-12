@@ -32,9 +32,12 @@ def class_shrinker(inp, target):
   return new_p_vals, new_t_vals
 
 
+# def sum_cross_entropy(inp, target):
+#   new_p_vals, new_t_vals = class_shrinker(inp, target)
+#   return F.cross_entropy(inp, target) + 3.0 * F.cross_entropy(new_p_vals, new_t_vals)
+
 def sum_cross_entropy(inp, target):
-  new_p_vals, new_t_vals = class_shrinker(inp, target)
-  return F.cross_entropy(inp, target) + 3.0 * F.cross_entropy(new_p_vals, new_t_vals)
+  return F.cross_entropy(inp, target) 
 
 
 class Runner(object):
