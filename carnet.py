@@ -191,7 +191,7 @@ class CarDataset(Dataset):
         return len(self.image_label_pairs)
 
 
-def make_dataloader(folder_names, data_path, batch_size, task, isTrain = False):
+def make_dataloader(folder_names, data_path, batch_size, task, bins, isTrain = False):
     """This function takes in a list of folders with images in them,
     the root directory of these images, and a batchsize and turns them into a dataloader"""
     # added flag isTrain - only augment/transform training set, not validation/test set
@@ -214,7 +214,7 @@ def make_dataloader(folder_names, data_path, batch_size, task, isTrain = False):
                                                          std=[.139, .130, .123])])
 
     # Create the datasets
-    pairs = build_image_label_pairs(folder_names, data_path, task)
+    pairs = build_image_label_pairs(folder_names, data_path, task, bins)
     dataset = CarDataset(pairs, preprocessing_transforms, isTrain)
 
     # Create the dataloaders
@@ -285,8 +285,8 @@ def main(args):
 
     # Make dataloaders
     print("Making train and val dataloaders...")
-    train_loader = make_dataloader(train_folder_names, args.trainval_data_path, args.batch_size, args.task, True)
-    val_loader = make_dataloader(val_folder_names, args.trainval_data_path, args.batch_size, args.task)
+    train_loader = make_dataloader(train_folder_names, args.trainval_data_path, args.batch_size, args.task, args.bins,True)
+    val_loader = make_dataloader(val_folder_names, args.trainval_data_path, args.batch_size, args.task,args.bins)
 
     # Specify the GPUs to use
     print("Finding GPUs...")
@@ -331,7 +331,7 @@ def main(args):
 
         # Make test dataloader
         print("Making test dataloaders...")
-        test_loader = make_dataloader(test_folder_names, args.test_data_path, args.batch_size, args.task)
+        test_loader = make_dataloader(test_folder_names, args.test_data_path, args.batch_size, args.task,args.bins)
 
         # Run the dataloader through the neural network
         print("Conducting a test...")
