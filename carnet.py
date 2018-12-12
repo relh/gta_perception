@@ -300,15 +300,33 @@ def main(args):
 
         # Write the submission to CSV
         print("Writing a submission to \"csvs/{}.csv\"...".format(save_path))
-        with open('csvs/'+save_path+'.csv', 'w') as sub:
-          sub.write('guid/image,label\n')
-          for name, val in outputs:
-              # Build path
-              mod_name = name.split('/')[3] + '/' + name.split('/')[4].split('_')[0]
-              mod_val = int(list_mapping[int(val)])
+        if args.task ==2:
+	        with open('csvs/'+save_path+'.csv', 'w') as sub:
+	          sub.write('guid/image/axis,value\n')
+	          for name, val in outputs:
+	              # Build path
+	              mod_name = name.split('/')[5] + '/' + name.split('/')[6].split('_')[0]
+	              x = val[0]
+	              y = val[1]
+	              z = val[2]
 
-              # Print and write row
-              sub.write(mod_name + ',' + str(mod_val) + '\n')
+	              # Print and write row
+	              sub.write(mod_name + '/x,' + str(x) + '\n')
+	              sub.write(mod_name + '/y,' + str(y) + '\n')
+	              sub.write(mod_name + '/z,' + str(z) + '\n')
+	        np.save('logits/'+save_path+'.npy', np.array([l for p,l in logits]))
+
+        else:
+	        with open('csvs/'+save_path+'.csv', 'w') as sub:
+	          sub.write('guid/image,label\n')
+	          for name, val in outputs:
+	              # Build path
+	              mod_name = name.split('/')[3] + '/' + name.split('/')[4].split('_')[0]
+	              mod_val = int(list_mapping[int(val)])
+
+	              # Print and write row
+	              sub.write(mod_name + ',' + str(mod_val) + '\n')
+
         np.save('logits/'+save_path+'.npy', np.array([l for p,l in logits]))
 
         # TODO average multiple logits results
