@@ -259,7 +259,7 @@ def main(args):
 
     print("Creating optimizer and scheduler...")
     if args.task == 4:
-      optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
+      optimizer = optim.RMSprop(model.parameters(), lr=args.lr) #, momentum=args.momentum)
       #optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=args.weight_decay, amsgrad=True)
       scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.3, patience=10, verbose=True)
     else:
@@ -330,7 +330,7 @@ if __name__ == '__main__':
     # Increasing these adds regularization
     p.add_argument("--batch_size", default=50, type=int, help="batch size")
     p.add_argument("--dropout_p", default=0.20, type=float, help="final layer p of neurons to drop")
-    p.add_argument("--weight_decay", default=1e-3, type=float, help="weight decay")
+    p.add_argument("--weight_decay", default=1e-2, type=float, help="weight decay")
 
     # Increasing this increases model ability 
     p.add_argument("--model_num_blocks", default=3, type=int, help="how deep the network is")
@@ -357,8 +357,8 @@ if __name__ == '__main__':
                     #'dpn68', 'dpn68b', 'dpn92', 'dpn98', 'dpn131', 'dpn107']
 
     for i in range(100):
-      args.save_dir = 'models/v' + str(210 + i)
-      args.load_dir = 'models/v' + str(210 + i)
+      args.save_dir = 'models/v' + str(221 + i)
+      args.load_dir = 'models/v' + str(221 + i)
       args.batch_size = 5 # To be not that safe
       args.model = random.choice(model_list)
       try:
