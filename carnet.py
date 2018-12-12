@@ -259,8 +259,13 @@ def main(args):
 
     print("Creating optimizer and scheduler...")
     if args.task == 4:
-      optimizer = optim.RMSprop(model.parameters(), lr=args.lr) #, momentum=args.momentum)
-      #optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=args.weight_decay, amsgrad=True)
+      if args.optimizer_string == 'RMSprop':
+        optimizer = optim.RMSprop(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+      elif args.optimizer_string == 'Adam':
+        optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+      elif args.optimizer_string == 'SGD':
+        optimizer = optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+
       scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.3, patience=10, verbose=True)
     else:
       optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=args.weight_decay, amsgrad=True)
@@ -272,7 +277,8 @@ def main(args):
     runner = Runner(model, optimizer, sum_cross_entropy, args.save_dir)
     best_acc = 0
     if "train" in args.modes.lower():
-        print("Begin training... {}".format(str(args.model)))
+        print("Begin training... {} + {} + {} + {}"
+              .format(str(args.model), str(args.lr), str(args.weight_Decay), str(args.optimizer_string)))
         best_acc = runner.loop(args.num_epoch, train_loader, val_loader, scheduler, args.batch_size)
 
     args.save_path = save_path = args.save_dir.split('/')[-1] + '-' + args.model + '-' + str(best_acc)
@@ -360,7 +366,12 @@ if __name__ == '__main__':
       args.save_dir = 'models/v' + str(221 + i)
       args.load_dir = 'models/v' + str(221 + i)
       args.batch_size = 5 # To be not that safe
+
+      # Random search
       args.model = random.choice(model_list)
+      args.lr = random.choice([1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 2e-2, 1e-1, 4e-1, 2e-1, 1e0])
+      args.weight_decay = random.choice([0, 0, 0, 1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 2e-2, 1e-1])
+      args.optimizer_string = random.choice(['SGD', 'Adam', 'RMSprop'])
       try:
         main(args)
       except Exception as e:
