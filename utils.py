@@ -17,7 +17,7 @@ def get_classes_to_label_map():
     return new_list_mapping
 
 
-list_mapping = get_classes_to_label_map()
+# list_mapping = get_classes_to_label_map()
 
 
 def class_shrinker(inp, target):
@@ -35,6 +35,9 @@ def class_shrinker(inp, target):
 def sum_cross_entropy(inp, target):
   new_p_vals, new_t_vals = class_shrinker(inp, target)
   return F.cross_entropy(inp, target) + 3.0 * F.cross_entropy(new_p_vals, new_t_vals)
+
+def sum_mse(inp, target):
+  return F.mse_loss(inp.float(), target.float())
 
 
 class Runner(object):
@@ -67,14 +70,17 @@ class Runner(object):
             # Testing is with batch_size 1
             if not is_train:
                 for p in range(len(path)):
-                  outputs.append((path[p], int(output.data.max(1)[1][p])))
+                  #outputs.append((path[p], int(output.data.max(1)[1][p])))
+                  outputs.append((path[p], output.data[p].cpu().numpy()))
                   outputs_data.append((path[p], torch.nn.functional.softmax(output.data[p, :]).cpu().numpy()))
 
             loss = self.loss_f(output, target)
             loop_loss.append(loss.data.item() / len(data_loader))
-            new_o, new_t = class_shrinker(output.data, target.data)
-            accuracy_shrunk.append((new_o.max(1)[1] == new_t).sum().item())
-            accuracy.append((output.data.max(1)[1] == target.data).sum().item())
+            # new_o, new_t = class_shrinker(output.data, target.data)
+            # accuracy_shrunk.append((new_o.max(1)[1] == new_t).sum().item())
+            # accuracy.append((output.data.max(1)[1] == target.data).sum().item())
+            accuracy_shrunk.append((output.data.float() == target.data.float() ).sum().item())
+            accuracy.append((output.data.float()  == target.data.float() ).sum().item())
             if is_train:
                 self.optimizer.zero_grad()
                 loss.backward()
