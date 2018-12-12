@@ -277,11 +277,11 @@ def main(args):
     runner = Runner(model, optimizer, sum_cross_entropy, args.save_dir)
     best_acc = 0
     if "train" in args.modes.lower():
-        print("Begin training... {} + {} + {} + {}"
-              .format(str(args.model), str(args.lr), str(args.weight_decay), str(args.optimizer_string)))
+        print("Begin training... {}, lr:{} + wd:{} + opt:{} + bs:{} "
+              .format(str(args.model), str(args.lr), str(args.weight_decay), str(args.optimizer_string), str(args.batch_size)))
         best_acc = runner.loop(args.num_epoch, train_loader, val_loader, scheduler, args.batch_size)
 
-    args.save_path = save_path = args.save_dir.split('/')[-1] + '-' + args.model + '-' + str(best_acc)
+    args.save_path = save_path = args.save_dir.split('/')[-1] + '-' + args.model + '-' + str(best_acc) + '-' + str(args.lr) + '-' + str(args.weight_decay) + '-' + str(args.optimizer_string) + '-' + str(args.batch_size)
 
     if "test" in args.modes.lower():
         print("Load test data...")
@@ -363,15 +363,18 @@ if __name__ == '__main__':
                     #'dpn68', 'dpn68b', 'dpn92', 'dpn98', 'dpn131', 'dpn107']
 
     for i in range(100):
-      args.save_dir = 'models/v' + str(221 + i)
-      args.load_dir = 'models/v' + str(221 + i)
-      args.batch_size = 5 # To be not that safe
+      args.save_dir = 'models/v' + str(405 + i)
+      args.load_dir = 'models/v' + str(405 + i)
+      args.batch_size = 10 # To be not that safe
 
       # Random search
       args.model = random.choice(model_list)
       args.lr = random.choice([1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 2e-2, 1e-1, 4e-1, 2e-1, 1e0])
       args.weight_decay = random.choice([0, 0, 0, 1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 2e-2, 1e-1])
       args.optimizer_string = random.choice(['SGD', 'Adam', 'RMSprop'])
+      args.batch_size = random.choice([10,12,14,16,18,20,25])
+
+
       try:
         main(args)
       except Exception as e:
