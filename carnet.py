@@ -132,7 +132,7 @@ def get_bin(num, xyz, bins):
 
     return out
 
-def build_image_label_pairs(folders, data_path, task, bins = 10):
+def build_image_label_pairs(folders, data_path, task, bins):
     """This function takes in a set of folders and their root path. It returns a list 
     of tuples of (image paths, class label) where class label is either 0,1,2 as in classes.csv"""
 
@@ -149,7 +149,7 @@ def build_image_label_pairs(folders, data_path, task, bins = 10):
                 if os.path.exists(os.path.join(data_path,folder,key_id+'_bbox.bin')):
                   label_data = np.fromfile(os.path.join(data_path,folder,key_id+'_bbox.bin'), dtype=np.float32)
                 else:
-                  label_data = [0]*10 # Doesn't exist, must be test, set to 0
+                  label_data = [0]*10 # Doesn't exist, must be test, set toau 0
 
                 # Append items to dataset
                 if task == 2:
@@ -387,6 +387,9 @@ if __name__ == '__main__':
 
     p.add_argument("--task", default=4, type=int, help="what task to train a model, or pretrained model")
     p.add_argument("--model", default='resnet18', type=str, help="what pretrained model to start with")
+
+    p.add_argument("--bins", default=10, type=int, help="what pretrained model to start with")
+
     args = p.parse_args()
 
     model_list = ['resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152',
