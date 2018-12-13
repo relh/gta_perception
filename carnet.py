@@ -265,6 +265,10 @@ def main(args):
         optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
       elif args.optimizer_string == 'SGD':
         optimizer = optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+      elif args.optimizer_string == 'Adagrad':
+        optimizer = optim.Adagrad(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+      elif args.optimizer_string == 'Adadelta':
+        optimizer = optim.Adadelta(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 
       scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.3, patience=10, verbose=True)
     else:
@@ -346,7 +350,7 @@ if __name__ == '__main__':
     p.add_argument("--save_dir", default='models/v378', type=str, help="what model dir to save")
     p.add_argument("--load_dir", default='models/v378', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
-    p.add_argument("--num_epoch", default=7, type=int, help="number of epochs to train")
+    p.add_argument("--num_epoch", default=15, type=int, help="number of epochs to train")
     p.add_argument("--modes", default='Train|Test', type=str, help="string containing modes")
 
     p.add_argument("--task", default=4, type=int, help="what task to train a model, or pretrained model")
@@ -363,15 +367,15 @@ if __name__ == '__main__':
                     #'dpn68', 'dpn68b', 'dpn92', 'dpn98', 'dpn131', 'dpn107']
 
     for i in range(100):
-      args.save_dir = 'models/v' + str(405 + i)
-      args.load_dir = 'models/v' + str(405 + i)
+      args.save_dir = 'models/v' + str(505 + i)
+      args.load_dir = 'models/v' + str(505 + i)
       args.batch_size = 10 # To be not that safe
 
       # Random search
       args.model = random.choice(model_list)
       args.lr = random.choice([1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 2e-2])
       args.weight_decay = random.choice([0, 0, 0, 1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 2e-2, 1e-1])
-      args.optimizer_string = random.choice(['SGD', 'Adam', 'RMSprop'])
+      args.optimizer_string = random.choice(['SGD', 'Adam', 'RMSprop', 'Adagrad', 'Adadelta'])
       args.batch_size = random.choice([10,12,14,16,18,20,25])
 
 
