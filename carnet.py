@@ -128,12 +128,11 @@ def build_image_label_pairs(folders, data_path, task):
 
     
 class CarDataset(Dataset):
-    def __init__(self, image_label_pairs, transforms, isTrain = False):
+    def __init__(self, image_label_pairs, transforms):
         """This Dataset takes in image and label pairs (tuples) and a list of transformations to apply 
         and returns tuples of (image_path, transformed_image_tensor, label_tensor)"""
         self.image_label_pairs = image_label_pairs 
         self.transforms = transforms
-        self.isTrain = isTrain
     def __getitem__(self, index):
         im_path, im_class = self.image_label_pairs[index]
         image_obj = Image.open(im_path) # Open image
@@ -141,8 +140,7 @@ class CarDataset(Dataset):
         transformed_image = self.transforms(image_obj) # Apply transformations
         transformed_image.permute(2,0,1) # Swap color channels
         #transformed_image_np = transformed_image.numpy()
-        #if self.isTrain :
-        #    transformed_image = torch.tensor(add_noise_to_image(transformed_image.numpy())).float()
+        #transformed_image = torch.tensor(add_noise_to_image(transformed_image.numpy())).float()
         return (im_path,
                torch.tensor(transformed_image).float(),
                torch.from_numpy(np.array(im_class)).long())
@@ -151,7 +149,7 @@ class CarDataset(Dataset):
         return len(self.image_label_pairs)
 
 
-def make_dataloader(folder_names, data_path, batch_size, task, isTrain = False):
+def make_dataloader(folder_names, data_path, batch_size, task, mode='train'):
     """This function takes in a list of folders with images in them,
     the root directory of these images, and a batchsize and turns them into a dataloader"""
     # added flag isTrain - only augment/transform training set, not validation/test set
@@ -171,21 +169,12 @@ def make_dataloader(folder_names, data_path, batch_size, task, isTrain = False):
                                     transforms.ToTensor(),
                                     transforms.Normalize(mean=[.362, .358, .347],
                                                          std=[.139, .130, .123])]
-    both_transforms = transforms.compose(data_augmentation + to_normalized_tensor)
-
-    train_loader = DataLoader(
-        datasets.CIFAR10(root, train=True, download=True,
-                         transform=transforms.Compose(data_augmentation + to_normalized_tensor)),
-        batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(
-        datasets.CIFAR10(root, train=False, transform=transforms.Compose(to_normalized_tensor)),
-        batch_size=batch_size, shuffle=True)
 
     # Create the datasets
     pairs = build_image_label_pairs(folder_names, data_path, task)
 
-    if isTrain:
-	    dataset = CarDataset(pairs, both_transforms, isTrain)
+    if 'train' in mode:
+	    dataset = CarDataset(pairs, transforms.Compose(data_augmentation + preprocessing_transforms))
 
 	    # Create the dataloaders
 	    return DataLoader(
@@ -194,8 +183,8 @@ def make_dataloader(folder_names, data_path, batch_size, task, isTrain = False):
 		num_workers=int(batch_size/2),
 		shuffle=True
 	    )
-    else:
-	    dataset = CarDataset(pairs, preprocessing_transforms, isTrain)
+    elif 'test' in mode:
+	    dataset = CarDataset(pairs, transforms.Compose(preprocessing_transforms))
 
 	    # Create the dataloaders
 	    return DataLoader(
@@ -273,34 +262,37 @@ def main(args):
         train_loader = make_dataloader(train_folder_names, args.trainval_data_path, args.batch_size, args.task, True)
         val_loader = make_dataloader(val_folder_names, args.trainval_data_path, args.batch_size, args.task)
 
-        # Build and load the model
-        model = build_model(args, gpus)
-        model = load_model(args, model, args.load_epoch)
+    # Build and load the model
+    model = build_model(args, gpus)
+    model = load_model(args, model, args.load_epoch)
 
-        # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
+    # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
 
-        print("Creating optimizer and scheduler...")
-        if args.task == 4:
-          if args.optimizer_string == 'RMSprop':
-            optimizer = optim.RMSprop(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-          elif args.optimizer_string == 'Adam':
-            optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-          elif args.optimizer_string == 'SGD':
-            optimizer = optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-          elif args.optimizer_string == 'Adagrad':
-            optimizer = optim.Adagrad(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-          elif args.optimizer_string == 'Adadelta':
-            optimizer = optim.Adadelta(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    print("Creating optimizer and scheduler...")
+    if args.task == 4:
+      if args.optimizer_string == 'RMSprop':
+        optimizer = optim.RMSprop(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+      elif args.optimizer_string == 'Adam':
+        optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+      elif args.optimizer_string == 'SGD':
+        optimizer = optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+      elif args.optimizer_string == 'Adagrad':
+        optimizer = optim.Adagrad(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+      elif args.optimizer_string == 'Adadelta':
+        optimizer = optim.Adadelta(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+      else:
+        optimizer = optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 
-          scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.3, patience=10, verbose=True)
-        else:
-          optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=args.weight_decay, amsgrad=True)
-          scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=5, verbose=True)
+      scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.3, patience=10, verbose=True)
+    else:
+      optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=args.weight_decay, amsgrad=True)
+      scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=5, verbose=True)
 
-        # This trainer class does all the work
-        print("Instantiating runner...")
-        runner = Runner(model, optimizer, sum_cross_entropy, args.save_dir)
+    # This trainer class does all the work
+    print("Instantiating runner...")
+    runner = Runner(model, optimizer, sum_cross_entropy, args.save_dir)
 
+    if "train" in args.modes.lower():
         print("Begin training... {}, lr:{} + wd:{} + opt:{} + bs:{} "
               .format(str(args.model), str(args.lr), str(args.weight_decay), str(args.optimizer_string), str(args.batch_size)))
         best_acc = runner.loop(args.num_epoch, train_loader, val_loader, scheduler, args.batch_size)
@@ -314,12 +306,13 @@ def main(args):
                         if os.path.isdir(os.path.join(args.test_data_path, x))]
         
         # Switch to eval mode
+        model = build_model(args, gpus)
         model = load_model(args, model, 9999)
         model.eval()
 
         # Make test dataloader
         print("Making test dataloaders...")
-        test_loader = make_dataloader(test_folder_names, args.test_data_path, args.batch_size, args.task)
+        test_loader = make_dataloader(test_folder_names, args.test_data_path, args.batch_size, args.task, 'test')
 
         # Run the dataloader through the neural network
         print("Conducting a test...")
@@ -379,11 +372,14 @@ if __name__ == '__main__':
     args = p.parse_args()
 
     # Output rewriting
-    for f in os.listdir('./models/'):
-        if '__init__' in f:
-            continue
+    for f in os.listdir('./csvs/'):
+        if len(f.split('-')) < 2:
+          continue
         args.model = f.split('-')[1]
         args.batch_size = 5
+        args.load_dir = './models/'+f.split('-')[0]
+        args.load_epoch = 9999
+        print(f)
         print(args.model)
         main(args)
     
