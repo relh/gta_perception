@@ -243,64 +243,64 @@ def main(args):
     """This major function controls finding data, splitting train and validation data, building datasets,
     building dataloaders, building a model, loading a model, training a model, testing a model, and writing
     a submission"""
-
-    # List the trainval folders
-    print("Load trainval data...")
-    trainval_folder_names = [x for x in os.listdir(args.trainval_data_path)
-                    if os.path.isdir(os.path.join(args.trainval_data_path, x))]
-
-    # Figure out how many folders to use for training and validation
-    num_train_folders = int(len(trainval_folder_names) * args.trainval_split_percentage)
-    num_val_folders = len(trainval_folder_names) - num_train_folders
-    print("Building dataset split...")
-    print("--- Number of train folders: {} ---".format(num_train_folders))
-    print("--- Number of val folders: {} ---".format(num_val_folders))
-
-    # Choose the training and validation folders
-    random.shuffle(trainval_folder_names) # TODO if loading a model, be careful
-    train_folder_names = trainval_folder_names[:num_train_folders]
-    val_folder_names = trainval_folder_names[num_train_folders:]
-
-    # Make dataloaders
-    print("Making train and val dataloaders...")
-    train_loader = make_dataloader(train_folder_names, args.trainval_data_path, args.batch_size, args.task, True)
-    val_loader = make_dataloader(val_folder_names, args.trainval_data_path, args.batch_size, args.task)
+    best_acc = 0
 
     # Specify the GPUs to use
     print("Finding GPUs...")
     gpus = list(range(torch.cuda.device_count()))
     print('--- GPUS: {} ---'.format(str(gpus)))
 
-    # Build and load the model
-    model = build_model(args, gpus)
-    model = load_model(args, model, args.load_epoch)
-
-    # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
-
-    print("Creating optimizer and scheduler...")
-    if args.task == 4:
-      if args.optimizer_string == 'RMSprop':
-        optimizer = optim.RMSprop(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-      elif args.optimizer_string == 'Adam':
-        optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-      elif args.optimizer_string == 'SGD':
-        optimizer = optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-      elif args.optimizer_string == 'Adagrad':
-        optimizer = optim.Adagrad(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-      elif args.optimizer_string == 'Adadelta':
-        optimizer = optim.Adadelta(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-
-      scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.3, patience=10, verbose=True)
-    else:
-      optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=args.weight_decay, amsgrad=True)
-      scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=5, verbose=True)
-
-    print("Declaring multi_loss function...")
-    # This trainer class does all the work
-    print("Instantiating runner...")
-    runner = Runner(model, optimizer, sum_cross_entropy, args.save_dir)
-    best_acc = 0
     if "train" in args.modes.lower():
+        # List the trainval folders
+        print("Load trainval data...")
+        trainval_folder_names = [x for x in os.listdir(args.trainval_data_path)
+                        if os.path.isdir(os.path.join(args.trainval_data_path, x))]
+
+        # Figure out how many folders to use for training and validation
+        num_train_folders = int(len(trainval_folder_names) * args.trainval_split_percentage)
+        num_val_folders = len(trainval_folder_names) - num_train_folders
+        print("Building dataset split...")
+        print("--- Number of train folders: {} ---".format(num_train_folders))
+        print("--- Number of val folders: {} ---".format(num_val_folders))
+
+        # Choose the training and validation folders
+        random.shuffle(trainval_folder_names) # TODO if loading a model, be careful
+        train_folder_names = trainval_folder_names[:num_train_folders]
+        val_folder_names = trainval_folder_names[num_train_folders:]
+
+        # Make dataloaders
+        print("Making train and val dataloaders...")
+        train_loader = make_dataloader(train_folder_names, args.trainval_data_path, args.batch_size, args.task, True)
+        val_loader = make_dataloader(val_folder_names, args.trainval_data_path, args.batch_size, args.task)
+
+        # Build and load the model
+        model = build_model(args, gpus)
+        model = load_model(args, model, args.load_epoch)
+
+        # Declare the optimizer, learning rate scheduler, and training loops. Note that models are saved to the current directory.
+
+        print("Creating optimizer and scheduler...")
+        if args.task == 4:
+          if args.optimizer_string == 'RMSprop':
+            optimizer = optim.RMSprop(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+          elif args.optimizer_string == 'Adam':
+            optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+          elif args.optimizer_string == 'SGD':
+            optimizer = optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+          elif args.optimizer_string == 'Adagrad':
+            optimizer = optim.Adagrad(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+          elif args.optimizer_string == 'Adadelta':
+            optimizer = optim.Adadelta(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+
+          scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.3, patience=10, verbose=True)
+        else:
+          optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=args.weight_decay, amsgrad=True)
+          scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=5, verbose=True)
+
+        # This trainer class does all the work
+        print("Instantiating runner...")
+        runner = Runner(model, optimizer, sum_cross_entropy, args.save_dir)
+
         print("Begin training... {}, lr:{} + wd:{} + opt:{} + bs:{} "
               .format(str(args.model), str(args.lr), str(args.weight_decay), str(args.optimizer_string), str(args.batch_size)))
         best_acc = runner.loop(args.num_epoch, train_loader, val_loader, scheduler, args.batch_size)
@@ -371,14 +371,21 @@ if __name__ == '__main__':
     p.add_argument("--load_dir", default='models/v378', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=15, type=int, help="number of epochs to train")
-    p.add_argument("--modes", default='Train|Test', type=str, help="string containing modes")
+    p.add_argument("--modes", default='Test', type=str, help="string containing modes")
 
     p.add_argument("--task", default=4, type=int, help="what task to train a model, or pretrained model")
     p.add_argument("--model", default='resnet18', type=str, help="what pretrained model to start with")
+    p.add_argument("--optimizer_string", default='DEFAULT', type=str, help="what optimizer string")
     args = p.parse_args()
 
     # Output rewriting
-    for f in os.listdir(' 
+    for f in os.listdir('./models/'):
+        if '__init__' in f:
+            continue
+        args.model = f.split('-')[1]
+        args.batch_size = 5
+        print(args.model)
+        main(args)
     
 
     # Random model search
