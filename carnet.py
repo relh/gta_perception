@@ -156,34 +156,54 @@ def make_dataloader(folder_names, data_path, batch_size, task, isTrain = False):
     the root directory of these images, and a batchsize and turns them into a dataloader"""
     # added flag isTrain - only augment/transform training set, not validation/test set
 
+    data_augmentation = [transforms.ColorJitter(brightness=0.2,
+					   contrast=0.2,
+					   saturation=0.2,
+					   hue=0.2),
+		    transforms.RandomHorizontalFlip(),
+		    transforms.RandomAffine(15.0,
+					    translate=(0.1, 0.1),
+					    scale=(0.8,1.2),
+					    shear=15.0,
+					    fillcolor=0)]
     # Declare the transforms
-    preprocessing_transforms = transforms.Compose(
-                                  [transforms.Resize(384),
-                                    transforms.ColorJitter(brightness=0.2,
-                                                           contrast=0.2,
-                                                           saturation=0.2,
-                                                           hue=0.2),
-                                    transforms.RandomHorizontalFlip(),
-                                    transforms.RandomAffine(15.0,
-                                                            translate=(0.1, 0.1),
-                                                            scale=(0.8,1.2),
-                                                            shear=15.0,
-                                                            fillcolor=0),
+    preprocessing_transforms = [transforms.Resize(384),
                                     transforms.ToTensor(),
                                     transforms.Normalize(mean=[.362, .358, .347],
-                                                         std=[.139, .130, .123])])
+                                                         std=[.139, .130, .123])]
+    both_transforms = transforms.compose(data_augmentation + to_normalized_tensor)
+
+    train_loader = DataLoader(
+        datasets.CIFAR10(root, train=True, download=True,
+                         transform=transforms.Compose(data_augmentation + to_normalized_tensor)),
+        batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(
+        datasets.CIFAR10(root, train=False, transform=transforms.Compose(to_normalized_tensor)),
+        batch_size=batch_size, shuffle=True)
 
     # Create the datasets
     pairs = build_image_label_pairs(folder_names, data_path, task)
-    dataset = CarDataset(pairs, preprocessing_transforms, isTrain)
 
-    # Create the dataloaders
-    return DataLoader(
-        dataset,
-        batch_size=batch_size,
-        num_workers=int(batch_size/2),
-        shuffle=True
-    )
+    if isTrain:
+	    dataset = CarDataset(pairs, both_transforms, isTrain)
+
+	    # Create the dataloaders
+	    return DataLoader(
+		dataset,
+		batch_size=batch_size,
+		num_workers=int(batch_size/2),
+		shuffle=True
+	    )
+    else:
+	    dataset = CarDataset(pairs, preprocessing_transforms, isTrain)
+
+	    # Create the dataloaders
+	    return DataLoader(
+		dataset,
+		batch_size=batch_size,
+		num_workers=int(batch_size/2),
+		shuffle=False
+	    )
 
 
 def build_model(args, gpus):
@@ -311,7 +331,7 @@ def main(args):
           sub.write('guid/image,label\n')
           for name, val in outputs:
               # Build path
-              mod_name = name.split('/')[3] + '/' + name.split('/')[4].split('_')[0]
+              mod_name = name.split('/')[4] + '/' + name.split('/')[5].split('_')[0]
               mod_val = int(list_mapping[int(val)])
 
               # Print and write row
@@ -357,6 +377,12 @@ if __name__ == '__main__':
     p.add_argument("--model", default='resnet18', type=str, help="what pretrained model to start with")
     args = p.parse_args()
 
+    # Output rewriting
+    for f in os.listdir(' 
+    
+
+    # Random model search
+    '''
     model_list = ['resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152',
                     'densenet121', 'densenet169', 'densenet201', 'densenet161',
                     'inception_v3',
@@ -384,3 +410,4 @@ if __name__ == '__main__':
       except Exception as e:
         print('Oops failed!')
         traceback.print_exc()
+    '''
