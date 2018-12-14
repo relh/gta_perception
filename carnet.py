@@ -385,8 +385,10 @@ if __name__ == '__main__':
         args.batch_size = 5
         args.load_dir = './models/'+f.split('-')[0]
         args.load_epoch = 9999
+        args.save_dir = 'models/'+f.split('-')[0] 
         print(f)
         print(args.model)
+
         try:
           main(args)
         except Exception as e:
