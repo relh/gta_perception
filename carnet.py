@@ -220,7 +220,13 @@ def load_model(args, model, load_epoch):
     # Load an existing model, be careful with train/validation
     if load_epoch > 0:
         print("Loading a model...")
-        details = torch.load(args.load_dir + "/model_epoch_{}.pth".format(str(load_epoch)))
+        existing_models = os.listdir(args.load_dir)
+        model_to_load = "model_epoch_{}.pth".format(str(load_epoch))
+        if model_to_load not in existing_models:
+          print("Load Epoch Not Found!!!")
+          model_to_load = random.choice(existing_models)
+
+        details = torch.load(args.load_dir + "/" + model_to_load)
 
         # Saving models can be weird, so be careful using these
         new_details = dict([(k, v) for k, v in details['weight'].items()])
@@ -377,11 +383,15 @@ if __name__ == '__main__':
           continue
         args.model = f.split('-')[1]
         args.batch_size = 5
-        args.load_dir = './models/'+f.split('-')[0]
+        args.load_dir = '/hdd/models/'+f.split('-')[0]
         args.load_epoch = 9999
         print(f)
         print(args.model)
-        main(args)
+        try:
+          main(args)
+        except Exception as e:
+          print('Oops failed!')
+          traceback.print_exc()
     
 
     # Random model search
