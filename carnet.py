@@ -379,11 +379,11 @@ if __name__ == '__main__':
 
     # Output rewriting
     for f in os.listdir('./csvs/'):
-        if len(f.split('-')) < 2 or if 'DEFAULT' in f:
+        if len(f.split('-')) < 2 or 'DEFAULT' in f:
           continue
         args.model = f.split('-')[1]
         args.batch_size = 5
-        args.load_dir = '/hdd/models/'+f.split('-')[0]
+        args.load_dir = './models/'+f.split('-')[0]
         args.load_epoch = 9999
         print(f)
         print(args.model)
