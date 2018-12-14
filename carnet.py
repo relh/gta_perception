@@ -379,7 +379,7 @@ if __name__ == '__main__':
 
     # Output rewriting
     for f in os.listdir('./csvs/'):
-        if len(f.split('-')) < 2:
+        if len(f.split('-')) < 2 or if 'DEFAULT' in f:
           continue
         args.model = f.split('-')[1]
         args.batch_size = 5
