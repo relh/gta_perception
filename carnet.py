@@ -32,7 +32,7 @@ def add_noise_to_image(image):
     # Define our sequence of augmentation steps that will be applied to every image.
     seq = iaa.Sequential(
         [
-		iaa.SomeOf((0, 5),
+    iaa.SomeOf((0, 5),
                 [
                     # Blur each image with varying strength using
                     # gaussian blur (sigma between 0 and 3.0),
@@ -69,10 +69,10 @@ def add_noise_to_image(image):
                     #         per_channel=0.2
                     #     ),
                     # ]),
-		    iaa.CoarseDropout((0, 0.15), size_percent=(0.02, 0.25)),
+        iaa.CoarseDropout((0, 0.15), size_percent=(0.02, 0.25)),
 
-		    #iaa.ElasticTransformation(alpha=(2.5, 5.0), sigma=0.25),
-		    iaa.SaltAndPepper(0.15, False),
+        #iaa.ElasticTransformation(alpha=(2.5, 5.0), sigma=0.25),
+        iaa.SaltAndPepper(0.15, False),
 
                     # Convert each image to grayscale and then overlay the
                     # result with the original with random alpha. I.e. remove
@@ -149,21 +149,21 @@ class CarDataset(Dataset):
         return len(self.image_label_pairs)
 
 
-def make_dataloader(folder_names, data_path, batch_size, task, mode='train'):
+def make_dataloader(folder_names, data_path, batch_size, task, modes):
     """This function takes in a list of folders with images in them,
     the root directory of these images, and a batchsize and turns them into a dataloader"""
     # added flag isTrain - only augment/transform training set, not validation/test set
 
     data_augmentation = [transforms.ColorJitter(brightness=0.2,
-					   contrast=0.2,
-					   saturation=0.2,
-					   hue=0.2),
-		    transforms.RandomHorizontalFlip(),
-		    transforms.RandomAffine(15.0,
-					    translate=(0.1, 0.1),
-					    scale=(0.8,1.2),
-					    shear=15.0,
-					    fillcolor=0)]
+             contrast=0.2,
+             saturation=0.2,
+             hue=0.2),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomAffine(15.0,
+              translate=(0.1, 0.1),
+              scale=(0.8,1.2),
+              shear=15.0,
+              fillcolor=0)]
     # Declare the transforms
     preprocessing_transforms = [transforms.Resize(384),
                                     transforms.ToTensor(),
@@ -173,26 +173,26 @@ def make_dataloader(folder_names, data_path, batch_size, task, mode='train'):
     # Create the datasets
     pairs = build_image_label_pairs(folder_names, data_path, task)
 
-    if 'train' in mode:
-	    dataset = CarDataset(pairs, transforms.Compose(data_augmentation + preprocessing_transforms))
+    if 'train' in modes.lower():
+      dataset = CarDataset(pairs, transforms.Compose(data_augmentation + preprocessing_transforms))
 
-	    # Create the dataloaders
-	    return DataLoader(
-		dataset,
-		batch_size=batch_size,
-		num_workers=int(batch_size/2),
-		shuffle=True
-	    )
-    elif 'test' in mode:
-	    dataset = CarDataset(pairs, transforms.Compose(preprocessing_transforms))
+      # Create the dataloaders
+      return DataLoader(
+    dataset,
+    batch_size=batch_size,
+    num_workers=int(batch_size/2),
+    shuffle=True
+      )
+    elif 'test' in modes.lower():
+      dataset = CarDataset(pairs, transforms.Compose(preprocessing_transforms))
 
-	    # Create the dataloaders
-	    return DataLoader(
-		dataset,
-		batch_size=batch_size,
-		num_workers=int(batch_size/2),
-		shuffle=False
-	    )
+      # Create the dataloaders
+      return DataLoader(
+    dataset,
+    batch_size=batch_size,
+    num_workers=int(batch_size/2),
+    shuffle=False
+      )
 
 
 def build_model(args, gpus):
@@ -265,8 +265,8 @@ def main(args):
 
         # Make dataloaders
         print("Making train and val dataloaders...")
-        train_loader = make_dataloader(train_folder_names, args.trainval_data_path, args.batch_size, args.task, True)
-        val_loader = make_dataloader(val_folder_names, args.trainval_data_path, args.batch_size, args.task)
+        train_loader = make_dataloader(train_folder_names, args.trainval_data_path, args.batch_size, args.task, args.modes)
+        val_loader = make_dataloader(val_folder_names, args.trainval_data_path, args.batch_size, args.task, args.modes)
 
     # Build and load the model
     model = build_model(args, gpus)
@@ -357,33 +357,35 @@ if __name__ == '__main__':
     p.add_argument("--trainval_split_percentage", default=0.80, type=float, help="percentage of data to use in training")
 
     # Increasing these adds regularization
-    p.add_argument("--batch_size", default=50, type=int, help="batch size")
+    p.add_argument("--batch_size", default=10, type=int, help="batch size")
     p.add_argument("--dropout_p", default=0.20, type=float, help="final layer p of neurons to drop")
-    p.add_argument("--weight_decay", default=1e-2, type=float, help="weight decay")
+    p.add_argument("--weight_decay", default=1e-5, type=float, help="weight decay")
 
     # Increasing this increases model ability 
-    p.add_argument("--model_num_blocks", default=3, type=int, help="how deep the network is")
-    p.add_argument("--lr", default=1e-3, type=float, help="learning rate")
+    p.add_argument("--lr", default=1e-4, type=float, help="learning rate")
     p.add_argument("--momentum", default=0.9, type=float, help="momentum value")
 
-    p.add_argument("--save_dir", default='models/v378', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v378', type=str, help="what model dir to load")
+    p.add_argument("--save_dir", default='models/v777', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v777', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=15, type=int, help="number of epochs to train")
-    p.add_argument("--modes", default='Test', type=str, help="string containing modes")
+    p.add_argument("--modes", default='Train|Test', type=str, help="string containing modes")
 
     p.add_argument("--task", default=4, type=int, help="what task to train a model, or pretrained model")
-    p.add_argument("--model", default='resnet18', type=str, help="what pretrained model to start with")
-    p.add_argument("--optimizer_string", default='DEFAULT', type=str, help="what optimizer string")
+    p.add_argument("--model", default='inceptionresnetv2', type=str, help="what pretrained model to start with")
+    p.add_argument("--optimizer_string", default='Adam', type=str, help="what optimizer string")
     args = p.parse_args()
 
+    main(args)
+
+    '''
     # Output rewriting
     for f in os.listdir('./csvs/'):
         if len(f.split('-')) < 2 or 'DEFAULT' in f:
           continue
         args.model = f.split('-')[1]
         args.batch_size = 5
-        args.load_dir = './models/'+f.split('-')[0]
+        args.load_dir = '/hdd/models/'+f.split('-')[0]
         args.load_epoch = 9999
         args.save_dir = 'models/'+f.split('-')[0] 
         print(f)
@@ -397,7 +399,6 @@ if __name__ == '__main__':
     
 
     # Random model search
-    '''
     model_list = ['resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152',
                     'densenet121', 'densenet169', 'densenet201', 'densenet161',
                     'inception_v3',
