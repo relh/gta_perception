@@ -2,6 +2,7 @@ from pathlib import Path
 import torch
 import csv
 from pdb import set_trace
+import numpy as np
 
 from tqdm import tqdm
 import torch.nn.functional as F
@@ -111,10 +112,13 @@ class Runner(object):
             loss, accuracy, outputs, logits = self._iteration(data_loader, batch_size, is_train=False)
         return loss, accuracy, outputs, logits
 
-    def loop(self, epochs, train_data, test_data, scheduler, batch_size):
+    def loop(self, epochs, train_data, more_train_data, test_data, scheduler, batch_size):
         for ep in range(1, epochs + 1):
             self.epoch = ep
+            #if np.random.random() < .5:
             self.train(train_data, batch_size)
+            #else:
+            #    self.train(more_train_data, batch_size)
             loss, accuracy, outputs, logits = self.test(test_data, batch_size)
             if scheduler is not None:
                 scheduler.step(sum(loss))

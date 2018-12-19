@@ -24,3 +24,13 @@ It contains our custom code.
 
 CarNet is a slightly modified version of the squeeze and excitation ResNet. It contains 4 residual blocks instead of the neighboring 3 and 5.
 CarNet is trained to predict which of the 23 object classes an image contains. 
+
+------Getting additional data running------------
+Note: extra data is not stored in folders like our data. It has one folder for all images and one folder for all annotations. Also, annotations are stored in VOC files, and do not have the same 23 class labels as our .bin files. For these reason we load it separately in carnet.py.
+
+1) in /home/ubuntu/more_train/ download either 10k imgs or all 200k imgs (and annotations) from https://fcav.engin.umich.edu/sim-dataset
+2) extract them:
+$ tar zxvf repro_10k_images.tgz
+$ tar zxvf repro_10k_annotations.tgz
+3) move annotations and images folders back to /home/ubuntu/more_train/
+4) run as usual! May want to experiment with 3 classes vs. all, but seems to help! Appears to be marginally slower (maybe 20% slower per iteration)

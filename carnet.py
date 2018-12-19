@@ -14,6 +14,7 @@ from skimage import io
 from torch import nn
 from torch.utils.data import DataLoader, Dataset, random_split
 from torchvision import datasets, transforms
+import xml.etree.ElementTree as ET
 
 from utils import Runner, sum_cross_entropy, get_classes_to_label_map
 
@@ -98,32 +99,62 @@ def add_noise_to_image(image):
     image = (image * 255).astype('uint8')
     return ((seq.augment_images(image))/255.0).astype('float64')
 
-def build_image_label_pairs(folders, data_path, task):
-    """This function takes in a set of folders and their root path. It returns a list 
+def build_image_label_pairs(names, data_path, task, xml=False):
+    """This function takes in a set of folders or images 'names' and their root path. It returns a list 
     of tuples of (image paths, class label) where class label is either 0,1,2 as in classes.csv"""
 
     image_label_pairs = []
-    # Iterate over the chosen folders
-    for folder in folders:
-        for file_name in os.listdir(os.path.join(data_path, folder)):
-            if ".jpg" in file_name:
-                # Get the ID for the image
-                key_id = file_name.split('_')[0]
+    if xml:
+        # Iterative over images
+        for img in names:
+            name = img[:-4]
+            if os.path.exists(os.path.join(data_path,'Annotations',name+'.xml')):
+                whole_name = os.path.join(data_path,'Annotations',name+'.xml')
+                e = ET.parse(whole_name).getroot()
+                class_name = e[5][0].text
+            else:
+                print('annotation for img', img,' does not exist!') # this should never happen!
+            
+            # Append items to dataset
+            if task == 2:
+                class_label = 0
+                if class_name == 'car':
+                    class_label = 1
+                elif class_name == 'bus' or class_name == 'motorbike':
+                    class_label = 2
+            else:
+                # Index 0 is 23 classes, -1 is 3 classes 
+                class_label = 0
+                if class_name == 'car':
+                    class_label = np.random.randint(7) + 1 # we're not sure, to reduce bias randomly choose car class
+                elif class_name == 'motorbike':
+                    class_label = 9
+                elif class_name == 'bus':
+                    class_label = 12
+                
+            image_label_pairs.append((os.path.join(data_path,'JPEGImages',img), class_label))
+    else:
+        # Iterate over the chosen folders
+        for folder in names:
+            for file_name in os.listdir(os.path.join(data_path, folder)):
+                if ".jpg" in file_name:
+                    # Get the ID for the image
+                    key_id = file_name.split('_')[0]
 
-                # Check that the label exist
-                if os.path.exists(os.path.join(data_path,folder,key_id+'_bbox.bin')):
-                  label_data = np.fromfile(os.path.join(data_path,folder,key_id+'_bbox.bin'), dtype=np.float32)
-                else:
-                  label_data = [0]*10 # Doesn't exist, must be test, set to 0
+                    # Check that the label exist
+                    if os.path.exists(os.path.join(data_path,folder,key_id+'_bbox.bin')):
+                      label_data = np.fromfile(os.path.join(data_path,folder,key_id+'_bbox.bin'), dtype=np.float32)
+                    else:
+                      label_data = [0]*10 # Doesn't exist, must be test, set to 0
 
-                # Append items to dataset
-                if task == 2:
-                  class_label = [int(x) for x in label_data[3:6]]
-                else:
-                  # Index 0 is 23 classes, -1 is 3 classes 
-                  class_label = int(label_data[9])
+                    # Append items to dataset
+                    if task == 2:
+                      class_label = [int(x) for x in label_data[3:6]]
+                    else:
+                      # Index 0 is 23 classes, -1 is 3 classes 
+                      class_label = int(label_data[9])
 
-                image_label_pairs.append((os.path.join(data_path,folder,file_name), class_label))
+                    image_label_pairs.append((os.path.join(data_path,folder,file_name), class_label))
     return image_label_pairs 
 
     
@@ -149,7 +180,7 @@ class CarDataset(Dataset):
         return len(self.image_label_pairs)
 
 
-def make_dataloader(folder_names, data_path, batch_size, task, modes):
+def make_dataloader(names, data_path, batch_size, task, modes, xml=False):
     """This function takes in a list of folders with images in them,
     the root directory of these images, and a batchsize and turns them into a dataloader"""
     # added flag isTrain - only augment/transform training set, not validation/test set
@@ -171,7 +202,7 @@ def make_dataloader(folder_names, data_path, batch_size, task, modes):
                                                          std=[.139, .130, .123])]
 
     # Create the datasets
-    pairs = build_image_label_pairs(folder_names, data_path, task)
+    pairs = build_image_label_pairs(names, data_path, task, xml)
 
     if 'train' in modes.lower():
       dataset = CarDataset(pairs, transforms.Compose(data_augmentation + preprocessing_transforms))
@@ -250,12 +281,15 @@ def main(args):
         print("Load trainval data...")
         trainval_folder_names = [x for x in os.listdir(args.trainval_data_path)
                         if os.path.isdir(os.path.join(args.trainval_data_path, x))]
+        more_train_img_names = [x for x in os.listdir(os.path.join(args.more_train_data_path, 'JPEGImages'))]
 
         # Figure out how many folders to use for training and validation
         num_train_folders = int(len(trainval_folder_names) * args.trainval_split_percentage)
+        num_more_train_imgs = len(more_train_img_names)
         num_val_folders = len(trainval_folder_names) - num_train_folders
         print("Building dataset split...")
         print("--- Number of train folders: {} ---".format(num_train_folders))
+        print("--- Number of additional train images: {} ---".format(num_more_train_imgs))
         print("--- Number of val folders: {} ---".format(num_val_folders))
 
         # Choose the training and validation folders
@@ -266,6 +300,7 @@ def main(args):
         # Make dataloaders
         print("Making train and val dataloaders...")
         train_loader = make_dataloader(train_folder_names, args.trainval_data_path, args.batch_size, args.task, args.modes)
+        more_train_loader = make_dataloader(more_train_img_names, args.more_train_data_path, args.batch_size, args.task, args.modes, xml=True)
         val_loader = make_dataloader(val_folder_names, args.trainval_data_path, args.batch_size, args.task, args.modes)
 
     # Build and load the model
@@ -301,7 +336,7 @@ def main(args):
     if "train" in args.modes.lower():
         print("Begin training... {}, lr:{} + wd:{} + opt:{} + bs:{} "
               .format(str(args.model), str(args.lr), str(args.weight_decay), str(args.optimizer_string), str(args.batch_size)))
-        best_acc = runner.loop(args.num_epoch, train_loader, val_loader, scheduler, args.batch_size)
+        best_acc = runner.loop(args.num_epoch, train_loader, more_train_loader, val_loader, scheduler, args.batch_size)
 
     args.save_path = save_path = args.save_dir.split('/')[-1] + '-' + args.model + '-' + str(best_acc) + '-' + str(args.lr) + '-' + str(args.weight_decay) + '-' + str(args.optimizer_string) + '-' + str(args.batch_size)
 
@@ -353,13 +388,14 @@ if __name__ == '__main__':
 
     p = argparse.ArgumentParser()
     p.add_argument("--trainval_data_path", default='/home/ubuntu/trainval/', type=str, help="carnet trainval data_path")
+    p.add_argument("--more_train_data_path", default='/home/ubuntu/more_train/', type=str, help="more train data_path")
     p.add_argument("--test_data_path", default='/home/ubuntu/test/', type=str, help="carnet test data_path")
-    p.add_argument("--trainval_split_percentage", default=0.80, type=float, help="percentage of data to use in training")
+    p.add_argument("--trainval_split_percentage", default=0.90, type=float, help="percentage of data to use in training")
 
     # Increasing these adds regularization
     p.add_argument("--batch_size", default=10, type=int, help="batch size")
-    p.add_argument("--dropout_p", default=0.20, type=float, help="final layer p of neurons to drop")
-    p.add_argument("--weight_decay", default=1e-5, type=float, help="weight decay")
+    p.add_argument("--dropout_p", default=0.35, type=float, help="final layer p of neurons to drop")
+    p.add_argument("--weight_decay", default=8e-2, type=float, help="weight decay")
 
     # Increasing this increases model ability 
     p.add_argument("--lr", default=1e-4, type=float, help="learning rate")
@@ -372,7 +408,7 @@ if __name__ == '__main__':
     p.add_argument("--modes", default='Train|Test', type=str, help="string containing modes")
 
     p.add_argument("--task", default=4, type=int, help="what task to train a model, or pretrained model")
-    p.add_argument("--model", default='inceptionresnetv2', type=str, help="what pretrained model to start with")
+    p.add_argument("--model", default='inception_v4', type=str, help="what pretrained model to start with")
     p.add_argument("--optimizer_string", default='Adam', type=str, help="what optimizer string")
     args = p.parse_args()
 
