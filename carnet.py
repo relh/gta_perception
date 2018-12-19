@@ -165,16 +165,19 @@ class CarDataset(Dataset):
         self.image_label_pairs = image_label_pairs 
         self.transforms = transforms
     def __getitem__(self, index):
-        im_path, im_class = self.image_label_pairs[index]
-        image_obj = Image.open(im_path) # Open image
+        try:
+            im_path, im_class = self.image_label_pairs[index]
+            image_obj = Image.open(im_path) # Open image
 
-        transformed_image = self.transforms(image_obj) # Apply transformations
-        transformed_image.permute(2,0,1) # Swap color channels
-        #transformed_image_np = transformed_image.numpy()
-        #transformed_image = torch.tensor(add_noise_to_image(transformed_image.numpy())).float()
-        return (im_path,
-               torch.tensor(transformed_image).float(),
-               torch.from_numpy(np.array(im_class)).long())
+            transformed_image = self.transforms(image_obj) # Apply transformations
+            transformed_image.permute(2,0,1) # Swap color channels
+            #transformed_image_np = transformed_image.numpy()
+            #transformed_image = torch.tensor(add_noise_to_image(transformed_image.numpy())).float()
+            return (im_path,
+                   torch.tensor(transformed_image).float(),
+                   torch.from_numpy(np.array(im_class)).long())
+        except:
+            return ('', [], [])
 
     def __len__(self):
         return len(self.image_label_pairs)
