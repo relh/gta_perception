@@ -61,36 +61,42 @@ class Runner(object):
         outputs = []
         outputs_data = []
         pbar = tqdm(data_loader, ncols=40, disable=False)
+        ct = 0
         for i, (path, data, target) in enumerate(pbar):
-            if self.cuda:
-                data, target = data.cuda(), target.cuda()
-            output = self.model(data)
+            try:
+                if self.cuda:
+                    data, target = data.cuda(), target.cuda()
+                output = self.model(data)
 
-            # Testing is with batch_size 1
-            if not is_train:
-                for p in range(len(path)):
-                  outputs.append((path[p], int(output.data.max(1)[1][p])))
-                  outputs_data.append((path[p], torch.nn.functional.softmax(output.data[p, :]).cpu().numpy()))
+                # Testing is with batch_size 1
+                if not is_train:
+                    for p in range(len(path)):
+                      outputs.append((path[p], int(output.data.max(1)[1][p])))
+                      outputs_data.append((path[p], torch.nn.functional.softmax(output.data[p, :]).cpu().numpy()))
 
-            loss = self.loss_f(output, target)
-            loop_loss.append(loss.data.item() / len(data_loader))
-            new_o, new_t = class_shrinker(output.data, target.data)
-            accuracy_shrunk.append((new_o.max(1)[1] == new_t).sum().item())
-            accuracy.append((output.data.max(1)[1] == target.data).sum().item())
-            if is_train:
-                self.optimizer.zero_grad()
-                loss.backward()
-                self.optimizer.step()
+                loss = self.loss_f(output, target)
+                loop_loss.append(loss.data.item() / len(data_loader))
+                new_o, new_t = class_shrinker(output.data, target.data)
+                accuracy_shrunk.append((new_o.max(1)[1] == new_t).sum().item())
+                accuracy.append((output.data.max(1)[1] == target.data).sum().item())
+                if is_train:
+                    self.optimizer.zero_grad()
+                    loss.backward()
+                    self.optimizer.step()
 
-            # Fetch LR
-            lr = 0.0
-            for param_group in self.optimizer.param_groups:
-              lr = param_group['lr']
+                # Fetch LR
+                lr = 0.0
+                for param_group in self.optimizer.param_groups:
+                  lr = param_group['lr']
 
-            # Set Progress bar
-            pbar.set_description(
-                "{} epoch {}: itr {:<5}/ {} - loss {:.3f} - acc {:.2f}% - acc3 {:.2f}% - lr {:.4f}"
-                .format('TRAIN' if is_train else 'TEST ', self.epoch, i*batch_size, len(data_loader)*batch_size, loss.data.item(), (sum(accuracy) / ((i+1)*batch_size))*100.0, (sum(accuracy_shrunk) / ((i+1)*batch_size))*100.0, lr))
+                # Set Progress bar
+                pbar.set_description(
+                    "{} epoch {}: itr {:<5}/ {} - loss {:.3f} - acc {:.2f}% - acc3 {:.2f}% - lr {:.4f}"
+                    .format('TRAIN' if is_train else 'TEST ', self.epoch, i*batch_size, len(data_loader)*batch_size, loss.data.item(), (sum(accuracy) / ((i+1)*batch_size))*100.0, (sum(accuracy_shrunk) / ((i+1)*batch_size))*100.0, lr))
+                
+            except:
+                print('failed to load data, count:', ct)
+                ct += 1
 
         mode = "train" if is_train else "test/val"
         if mode == "test/val":
@@ -112,13 +118,13 @@ class Runner(object):
             loss, accuracy, outputs, logits = self._iteration(data_loader, batch_size, is_train=False)
         return loss, accuracy, outputs, logits
 
-    def loop(self, epochs, train_data, more_train_data, test_data, scheduler, batch_size, p):
+    def loop(self, epochs, train_data, more_train_data, test_data, scheduler, batch_size):
         for ep in range(1, epochs + 1):
             self.epoch = ep
-            if np.random.random() < p: # probability we train on old training set
-                self.train(train_data, batch_size)
-            else:
-                self.train(more_train_data, batch_size)
+            print("training one epoch on new data")
+            self.train(more_train_data, batch_size)
+            print("training one epoch on original data")
+            self.train(train_data, batch_size)
             loss, accuracy, outputs, logits = self.test(test_data, batch_size)
             if scheduler is not None:
                 scheduler.step(sum(loss))

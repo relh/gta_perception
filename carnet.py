@@ -336,7 +336,7 @@ def main(args):
     if "train" in args.modes.lower():
         print("Begin training... {}, lr:{} + wd:{} + opt:{} + bs:{} "
               .format(str(args.model), str(args.lr), str(args.weight_decay), str(args.optimizer_string), str(args.batch_size)))
-        best_acc = runner.loop(args.num_epoch, train_loader, more_train_loader, val_loader, scheduler, args.batch_size, args.p)
+        best_acc = runner.loop(args.num_epoch, train_loader, more_train_loader, val_loader, scheduler, args.batch_size)
 
     args.save_path = save_path = args.save_dir.split('/')[-1] + '-' + args.model + '-' + str(best_acc) + '-' + str(args.lr) + '-' + str(args.weight_decay) + '-' + str(args.optimizer_string) + '-' + str(args.batch_size)
 
@@ -391,7 +391,6 @@ if __name__ == '__main__':
     p.add_argument("--more_train_data_path", default='/home/ubuntu/more_train/', type=str, help="more train data_path")
     p.add_argument("--test_data_path", default='/home/ubuntu/test/', type=str, help="carnet test data_path")
     p.add_argument("--trainval_split_percentage", default=0.90, type=float, help="percentage of data to use in training")
-    p.add_argument("--p", default=0.25, type=float, help="percentage of original training set to be used during training")
 
     # Increasing these adds regularization
     p.add_argument("--batch_size", default=10, type=int, help="batch size")
