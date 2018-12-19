@@ -34,3 +34,6 @@ $ tar zxvf repro_10k_images.tgz
 $ tar zxvf repro_10k_annotations.tgz
 3) move annotations and images folders back to /home/ubuntu/more_train/
 4) run as usual! May want to experiment with 3 classes vs. all, but seems to help! Appears to be marginally slower (maybe 20% slower per iteration)
+=======
+To make a conda environment for our code, run `conda env create -f env535.yml`
+Then, `source activate env535.yml` and run `python3 carnet.py` with appropriate args

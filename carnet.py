@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader, Dataset, random_split
 from torchvision import datasets, transforms
 import xml.etree.ElementTree as ET
 
-from utils import Runner, sum_cross_entropy, get_classes_to_label_map
+from utils import Runner, sum_cross_entropy, get_classes_to_label_map, sum_mse
 
 from cnn_finetune import make_model
 
@@ -24,8 +24,8 @@ from cnn_finetune import make_model
 import imgaug as ia
 from imgaug import augmenters as iaa
 
-print("Building 23 to 3 class mapper...")
-from utils import list_mapping
+# print("Building 23 to 3 class mapper...")
+# from utils import list_mapping
 
 def add_noise_to_image(image):
     sometimes = lambda aug: iaa.Sometimes(0.8, aug)
@@ -240,9 +240,7 @@ def build_model(args, gpus):
       pass # TODO make model here
     elif args.task == 2:
       # TODO make this use MSE and have 3 heads, one for X,Y,Z
-      #from se_resnet import se_resnet_custom
-      #model = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks, dropout_p=args.dropout_p, num_classes=3), #device_ids=gpus)
-      pass # TODO make model here similar to task 3
+      model = make_model(args.model, num_classes=3, dropout_p=args.dropout_p, pretrained=True)
     elif args.task == 3 or args.task == 4:
       model = make_model(args.model, num_classes=23, dropout_p=args.dropout_p, pretrained=True)
       #model = make_model('resnet18', num_classes=23, dropout_p=args.dropout_p, pretrained=True)
@@ -334,7 +332,11 @@ def main(args):
 
     # This trainer class does all the work
     print("Instantiating runner...")
-    runner = Runner(model, optimizer, sum_cross_entropy, args.save_dir)
+    if args.task == 2:
+        runner = Runner(model, optimizer, sum_mse, args.task, args.save_dir,args.task)
+    else:
+        runner = Runner(model, optimizer, sum_cross_entropy, args.save_dir)
+    best_acc = 0
 
     if "train" in args.modes.lower():
         print("Begin training... {}, lr:{} + wd:{} + opt:{} + bs:{} "
@@ -364,15 +366,34 @@ def main(args):
 
         # Write the submission to CSV
         print("Writing a submission to \"csvs/{}.csv\"...".format(save_path))
-        with open('csvs/'+save_path+'.csv', 'w') as sub:
-          sub.write('guid/image,label\n')
-          for name, val in outputs:
-              # Build path
-              mod_name = name.split('/')[4] + '/' + name.split('/')[5].split('_')[0]
-              mod_val = int(list_mapping[int(val)])
 
-              # Print and write row
-              sub.write(mod_name + ',' + str(mod_val) + '\n')
+        if args.task == 2:
+	        with open('csvs/'+save_path+'.csv', 'w') as sub:
+	          sub.write('guid/image/axis,value\n')
+	          for name, val in outputs:
+	              # Build path
+	              mod_name = name.split('/')[5] + '/' + name.split('/')[6].split('_')[0]
+	              x = val[0]
+	              y = val[1]
+	              z = val[2]
+
+	              # Print and write row
+	              sub.write(mod_name + '/x,' + str(x) + '\n')
+	              sub.write(mod_name + '/y,' + str(y) + '\n')
+	              sub.write(mod_name + '/z,' + str(z) + '\n')
+	        np.save('logits/'+save_path+'.npy', np.array([l for p,l in logits]))
+
+        else:
+	        with open('csvs/'+save_path+'.csv', 'w') as sub:
+	          sub.write('guid/image,label\n')
+	          for name, val in outputs:
+	              # Build path
+	              mod_name = name.split('/')[3] + '/' + name.split('/')[4].split('_')[0]
+	              mod_val = int(list_mapping[int(val)])
+
+	              # Print and write row
+	              sub.write(mod_name + ',' + str(mod_val) + '\n')
+
         np.save('logits/'+save_path+'.npy', np.array([l for p,l in logits]))
 
         # TODO average multiple logits results
@@ -404,8 +425,8 @@ if __name__ == '__main__':
     p.add_argument("--lr", default=1e-4, type=float, help="learning rate")
     p.add_argument("--momentum", default=0.9, type=float, help="momentum value")
 
-    p.add_argument("--save_dir", default='models/v777', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v777', type=str, help="what model dir to load")
+    p.add_argument("--save_dir", default='models/v888', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v888', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
     p.add_argument("--num_epoch", default=15, type=int, help="number of epochs to train")
     p.add_argument("--modes", default='Train|Test', type=str, help="string containing modes")
@@ -446,6 +467,18 @@ if __name__ == '__main__':
                     'nasnetamobile', 'pnasnet5large',
                     'inceptionresnetv2', 'polynet']
                     #'dpn68', 'dpn68b', 'dpn92', 'dpn98', 'dpn131', 'dpn107']
+    main(args)
+
+    # for i in range(100):
+    #   args.save_dir = 'models/v' + str(210 + i)
+    #   args.load_dir = 'models/v' + str(210 + i)
+    #   args.batch_size = 5 # To be not that safe
+    #   args.model = random.choice(model_list)
+    #   try:
+    #     main(args)
+    #   except Exception as e:
+    #     print('Oops failed!')
+    #     traceback.print_exc()
 
     for i in range(100):
       args.save_dir = 'models/v' + str(505 + i)
