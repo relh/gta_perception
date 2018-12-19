@@ -37,12 +37,15 @@ def sum_cross_entropy(inp, target):
   new_p_vals, new_t_vals = class_shrinker(inp, target)
   return F.cross_entropy(inp, target) + 3.0 * F.cross_entropy(new_p_vals, new_t_vals)
 
+def sum_mse(inp, target):
+  return F.mse_loss(inp.float(), target.float())
+
 
 class Runner(object):
     cuda = torch.cuda.is_available()
     torch.backends.cudnn.benchmark = True
 
-    def __init__(self, model, optimizer, loss_f, save_dir=None, save_freq=5):
+    def __init__(self, model, optimizer, loss_f, task, save_dir=None, save_freq=5):
         self.model = model
         if self.cuda:
             model.cuda()
@@ -52,6 +55,7 @@ class Runner(object):
         self.save_freq = save_freq
         self.epoch = 0
         self.best_acc = -100
+        self.task = task
 
     def _iteration(self, data_loader, batch_size, is_train=True):
         loop_loss = []
@@ -68,14 +72,20 @@ class Runner(object):
             # Testing is with batch_size 1
             if not is_train:
                 for p in range(len(path)):
-                  outputs.append((path[p], int(output.data.max(1)[1][p])))
+                  #outputs.append((path[p], int(output.data.max(1)[1][p])))
+                  outputs.append((path[p], output.data[p].cpu().numpy()))
                   outputs_data.append((path[p], torch.nn.functional.softmax(output.data[p, :]).cpu().numpy()))
 
             loss = self.loss_f(output, target)
             loop_loss.append(loss.data.item() / len(data_loader))
-            new_o, new_t = class_shrinker(output.data, target.data)
-            accuracy_shrunk.append((new_o.max(1)[1] == new_t).sum().item())
-            accuracy.append((output.data.max(1)[1] == target.data).sum().item())
+
+            if self.task ==2:
+                accuracy_shrunk.append(((output.data.float() -target.data.float())**2/len(target.data.float())).sum().item())
+                accuracy.append(((output.data.float()  - target.data.float())**2/len(target.data.float())).sum().item())
+            else:
+                new_o, new_t = class_shrinker(output.data, target.data)
+                accuracy_shrunk.append((new_o.max(1)[1] == new_t).sum().item())
+                accuracy.append((output.data.max(1)[1] == target.data).sum().item())
             if is_train:
                 self.optimizer.zero_grad()
                 loss.backward()
@@ -87,9 +97,15 @@ class Runner(object):
               lr = param_group['lr']
 
             # Set Progress bar
-            pbar.set_description(
-                "{} epoch {}: itr {:<5}/ {} - loss {:.3f} - acc {:.2f}% - acc3 {:.2f}% - lr {:.4f}"
+            if self.task ==2:
+                pbar.set_description(
+                "{} epoch {}: itr {:<5}/ {} - loss {:.3f} - error {:.2f} - error3 {:.2f} - lr {:.4f}"
                 .format('TRAIN' if is_train else 'TEST ', self.epoch, i*batch_size, len(data_loader)*batch_size, loss.data.item(), (sum(accuracy) / ((i+1)*batch_size))*100.0, (sum(accuracy_shrunk) / ((i+1)*batch_size))*100.0, lr))
+
+            else:
+                pbar.set_description(
+                 "{} epoch {}: itr {:<5}/ {} - loss {:.3f} - acc {:.2f}% - acc3 {:.2f}% - lr {:.4f}"
+                 .format('TRAIN' if is_train else 'TEST ', self.epoch, i*batch_size, len(data_loader)*batch_size, loss.data.item(), (sum(accuracy) / ((i+1)*batch_size))*100.0, (sum(accuracy_shrunk) / ((i+1)*batch_size))*100.0, lr))
 
         mode = "train" if is_train else "test/val"
         if mode == "test/val":
