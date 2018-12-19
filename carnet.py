@@ -32,7 +32,7 @@ def add_noise_to_image(image):
     # Define our sequence of augmentation steps that will be applied to every image.
     seq = iaa.Sequential(
         [
-		iaa.SomeOf((0, 5),
+    iaa.SomeOf((0, 5),
                 [
                     # Blur each image with varying strength using
                     # gaussian blur (sigma between 0 and 3.0),
@@ -69,10 +69,10 @@ def add_noise_to_image(image):
                     #         per_channel=0.2
                     #     ),
                     # ]),
-		    iaa.CoarseDropout((0, 0.15), size_percent=(0.02, 0.25)),
+        iaa.CoarseDropout((0, 0.15), size_percent=(0.02, 0.25)),
 
-		    #iaa.ElasticTransformation(alpha=(2.5, 5.0), sigma=0.25),
-		    iaa.SaltAndPepper(0.15, False),
+        #iaa.ElasticTransformation(alpha=(2.5, 5.0), sigma=0.25),
+        iaa.SaltAndPepper(0.15, False),
 
                     # Convert each image to grayscale and then overlay the
                     # result with the original with random alpha. I.e. remove
@@ -128,12 +128,11 @@ def build_image_label_pairs(folders, data_path, task):
 
     
 class CarDataset(Dataset):
-    def __init__(self, image_label_pairs, transforms, isTrain = False):
+    def __init__(self, image_label_pairs, transforms):
         """This Dataset takes in image and label pairs (tuples) and a list of transformations to apply 
         and returns tuples of (image_path, transformed_image_tensor, label_tensor)"""
         self.image_label_pairs = image_label_pairs 
         self.transforms = transforms
-        self.isTrain = isTrain
     def __getitem__(self, index):
         im_path, im_class = self.image_label_pairs[index]
         image_obj = Image.open(im_path) # Open image
@@ -141,8 +140,7 @@ class CarDataset(Dataset):
         transformed_image = self.transforms(image_obj) # Apply transformations
         transformed_image.permute(2,0,1) # Swap color channels
         #transformed_image_np = transformed_image.numpy()
-        #if self.isTrain :
-        #    transformed_image = torch.tensor(add_noise_to_image(transformed_image.numpy())).float()
+        #transformed_image = torch.tensor(add_noise_to_image(transformed_image.numpy())).float()
         return (im_path,
                torch.tensor(transformed_image).float(),
                torch.from_numpy(np.array(im_class)).long())
@@ -151,39 +149,50 @@ class CarDataset(Dataset):
         return len(self.image_label_pairs)
 
 
-def make_dataloader(folder_names, data_path, batch_size, task, isTrain = False):
+def make_dataloader(folder_names, data_path, batch_size, task, modes):
     """This function takes in a list of folders with images in them,
     the root directory of these images, and a batchsize and turns them into a dataloader"""
     # added flag isTrain - only augment/transform training set, not validation/test set
 
+    data_augmentation = [transforms.ColorJitter(brightness=0.2,
+             contrast=0.2,
+             saturation=0.2,
+             hue=0.2),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomAffine(15.0,
+              translate=(0.1, 0.1),
+              scale=(0.8,1.2),
+              shear=15.0,
+              fillcolor=0)]
     # Declare the transforms
-    preprocessing_transforms = transforms.Compose(
-                                  [transforms.Resize(384),
-                                    transforms.ColorJitter(brightness=0.2,
-                                                           contrast=0.2,
-                                                           saturation=0.2,
-                                                           hue=0.2),
-                                    transforms.RandomHorizontalFlip(),
-                                    transforms.RandomAffine(15.0,
-                                                            translate=(0.1, 0.1),
-                                                            scale=(0.8,1.2),
-                                                            shear=15.0,
-                                                            fillcolor=0),
+    preprocessing_transforms = [transforms.Resize(384),
                                     transforms.ToTensor(),
                                     transforms.Normalize(mean=[.362, .358, .347],
-                                                         std=[.139, .130, .123])])
+                                                         std=[.139, .130, .123])]
 
     # Create the datasets
     pairs = build_image_label_pairs(folder_names, data_path, task)
-    dataset = CarDataset(pairs, preprocessing_transforms, isTrain)
 
-    # Create the dataloaders
-    return DataLoader(
-        dataset,
-        batch_size=batch_size,
-        num_workers=int(batch_size/2),
-        shuffle=True
-    )
+    if 'train' in modes.lower():
+      dataset = CarDataset(pairs, transforms.Compose(data_augmentation + preprocessing_transforms))
+
+      # Create the dataloaders
+      return DataLoader(
+    dataset,
+    batch_size=batch_size,
+    num_workers=int(batch_size/2),
+    shuffle=True
+      )
+    elif 'test' in modes.lower():
+      dataset = CarDataset(pairs, transforms.Compose(preprocessing_transforms))
+
+      # Create the dataloaders
+      return DataLoader(
+    dataset,
+    batch_size=batch_size,
+    num_workers=int(batch_size/2),
+    shuffle=False
+      )
 
 
 def build_model(args, gpus):
@@ -209,7 +218,13 @@ def load_model(args, model, load_epoch):
     # Load an existing model, be careful with train/validation
     if load_epoch > 0:
         print("Loading a model...")
-        details = torch.load(args.load_dir + "/model_epoch_{}.pth".format(str(load_epoch)))
+        existing_models = os.listdir(args.load_dir)
+        model_to_load = "model_epoch_{}.pth".format(str(load_epoch))
+        if model_to_load not in existing_models:
+          print("Load Epoch Not Found!!!")
+          model_to_load = random.choice(existing_models)
+
+        details = torch.load(args.load_dir + "/" + model_to_load)
 
         # Saving models can be weird, so be careful using these
         new_details = dict([(k, v) for k, v in details['weight'].items()])
@@ -221,33 +236,35 @@ def main(args):
     """This major function controls finding data, splitting train and validation data, building datasets,
     building dataloaders, building a model, loading a model, training a model, testing a model, and writing
     a submission"""
-
-    # List the trainval folders
-    print("Load trainval data...")
-    trainval_folder_names = [x for x in os.listdir(args.trainval_data_path)
-                    if os.path.isdir(os.path.join(args.trainval_data_path, x))]
-
-    # Figure out how many folders to use for training and validation
-    num_train_folders = int(len(trainval_folder_names) * args.trainval_split_percentage)
-    num_val_folders = len(trainval_folder_names) - num_train_folders
-    print("Building dataset split...")
-    print("--- Number of train folders: {} ---".format(num_train_folders))
-    print("--- Number of val folders: {} ---".format(num_val_folders))
-
-    # Choose the training and validation folders
-    random.shuffle(trainval_folder_names) # TODO if loading a model, be careful
-    train_folder_names = trainval_folder_names[:num_train_folders]
-    val_folder_names = trainval_folder_names[num_train_folders:]
-
-    # Make dataloaders
-    print("Making train and val dataloaders...")
-    train_loader = make_dataloader(train_folder_names, args.trainval_data_path, args.batch_size, args.task, True)
-    val_loader = make_dataloader(val_folder_names, args.trainval_data_path, args.batch_size, args.task)
+    best_acc = 0
 
     # Specify the GPUs to use
     print("Finding GPUs...")
     gpus = list(range(torch.cuda.device_count()))
     print('--- GPUS: {} ---'.format(str(gpus)))
+
+    if "train" in args.modes.lower():
+        # List the trainval folders
+        print("Load trainval data...")
+        trainval_folder_names = [x for x in os.listdir(args.trainval_data_path)
+                        if os.path.isdir(os.path.join(args.trainval_data_path, x))]
+
+        # Figure out how many folders to use for training and validation
+        num_train_folders = int(len(trainval_folder_names) * args.trainval_split_percentage)
+        num_val_folders = len(trainval_folder_names) - num_train_folders
+        print("Building dataset split...")
+        print("--- Number of train folders: {} ---".format(num_train_folders))
+        print("--- Number of val folders: {} ---".format(num_val_folders))
+
+        # Choose the training and validation folders
+        random.shuffle(trainval_folder_names) # TODO if loading a model, be careful
+        train_folder_names = trainval_folder_names[:num_train_folders]
+        val_folder_names = trainval_folder_names[num_train_folders:]
+
+        # Make dataloaders
+        print("Making train and val dataloaders...")
+        train_loader = make_dataloader(train_folder_names, args.trainval_data_path, args.batch_size, args.task, args.modes)
+        val_loader = make_dataloader(val_folder_names, args.trainval_data_path, args.batch_size, args.task, args.modes)
 
     # Build and load the model
     model = build_model(args, gpus)
@@ -257,27 +274,38 @@ def main(args):
 
     print("Creating optimizer and scheduler...")
     if args.task == 4:
-      optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
-      #optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=args.weight_decay, amsgrad=True)
+      if args.optimizer_string == 'RMSprop':
+        optimizer = optim.RMSprop(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+      elif args.optimizer_string == 'Adam':
+        optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+      elif args.optimizer_string == 'SGD':
+        optimizer = optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+      elif args.optimizer_string == 'Adagrad':
+        optimizer = optim.Adagrad(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+      elif args.optimizer_string == 'Adadelta':
+        optimizer = optim.Adadelta(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+      else:
+        optimizer = optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+
       scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.3, patience=10, verbose=True)
     else:
       optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=args.weight_decay, amsgrad=True)
       scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=5, verbose=True)
 
-    print("Declaring multi_loss function...")
     # This trainer class does all the work
     print("Instantiating runner...")
-
-    if args.task ==2:
+    if args.task == 2:
         runner = Runner(model, optimizer, sum_mse, args.task, args.save_dir,args.task)
     else:
         runner = Runner(model, optimizer, sum_cross_entropy, args.save_dir)
     best_acc = 0
+
     if "train" in args.modes.lower():
-        print("Begin training... {}".format(str(args.model)))
+        print("Begin training... {}, lr:{} + wd:{} + opt:{} + bs:{} "
+              .format(str(args.model), str(args.lr), str(args.weight_decay), str(args.optimizer_string), str(args.batch_size)))
         best_acc = runner.loop(args.num_epoch, train_loader, val_loader, scheduler, args.batch_size)
 
-    args.save_path = save_path = args.save_dir.split('/')[-1] + '-' + args.model + '-' + str(best_acc)
+    args.save_path = save_path = args.save_dir.split('/')[-1] + '-' + args.model + '-' + str(best_acc) + '-' + str(args.lr) + '-' + str(args.weight_decay) + '-' + str(args.optimizer_string) + '-' + str(args.batch_size)
 
     if "test" in args.modes.lower():
         print("Load test data...")
@@ -286,12 +314,13 @@ def main(args):
                         if os.path.isdir(os.path.join(args.test_data_path, x))]
         
         # Switch to eval mode
+        model = build_model(args, gpus)
         model = load_model(args, model, 9999)
         model.eval()
 
         # Make test dataloader
         print("Making test dataloaders...")
-        test_loader = make_dataloader(test_folder_names, args.test_data_path, args.batch_size, args.task)
+        test_loader = make_dataloader(test_folder_names, args.test_data_path, args.batch_size, args.task, 'test')
 
         # Run the dataloader through the neural network
         print("Conducting a test...")
@@ -299,7 +328,8 @@ def main(args):
 
         # Write the submission to CSV
         print("Writing a submission to \"csvs/{}.csv\"...".format(save_path))
-        if args.task ==2:
+
+        if args.task == 2:
 	        with open('csvs/'+save_path+'.csv', 'w') as sub:
 	          sub.write('guid/image/axis,value\n')
 	          for name, val in outputs:
@@ -348,25 +378,48 @@ if __name__ == '__main__':
     p.add_argument("--trainval_split_percentage", default=0.80, type=float, help="percentage of data to use in training")
 
     # Increasing these adds regularization
-    p.add_argument("--batch_size", default=50, type=int, help="batch size")
+    p.add_argument("--batch_size", default=10, type=int, help="batch size")
     p.add_argument("--dropout_p", default=0.20, type=float, help="final layer p of neurons to drop")
-    p.add_argument("--weight_decay", default=1e-3, type=float, help="weight decay")
+    p.add_argument("--weight_decay", default=1e-5, type=float, help="weight decay")
 
     # Increasing this increases model ability 
-    p.add_argument("--model_num_blocks", default=3, type=int, help="how deep the network is")
-    p.add_argument("--lr", default=1e-3, type=float, help="learning rate")
+    p.add_argument("--lr", default=1e-4, type=float, help="learning rate")
     p.add_argument("--momentum", default=0.9, type=float, help="momentum value")
 
-    p.add_argument("--save_dir", default='models/v378', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v378', type=str, help="what model dir to load")
+    p.add_argument("--save_dir", default='models/v777', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v777', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
-    p.add_argument("--num_epoch", default=7, type=int, help="number of epochs to train")
+    p.add_argument("--num_epoch", default=15, type=int, help="number of epochs to train")
     p.add_argument("--modes", default='Train|Test', type=str, help="string containing modes")
 
     p.add_argument("--task", default=4, type=int, help="what task to train a model, or pretrained model")
-    p.add_argument("--model", default='resnet18', type=str, help="what pretrained model to start with")
+    p.add_argument("--model", default='inceptionresnetv2', type=str, help="what pretrained model to start with")
+    p.add_argument("--optimizer_string", default='Adam', type=str, help="what optimizer string")
     args = p.parse_args()
 
+    main(args)
+
+    '''
+    # Output rewriting
+    for f in os.listdir('./csvs/'):
+        if len(f.split('-')) < 2 or 'DEFAULT' in f:
+          continue
+        args.model = f.split('-')[1]
+        args.batch_size = 5
+        args.load_dir = '/hdd/models/'+f.split('-')[0]
+        args.load_epoch = 9999
+        args.save_dir = 'models/'+f.split('-')[0] 
+        print(f)
+        print(args.model)
+
+        try:
+          main(args)
+        except Exception as e:
+          print('Oops failed!')
+          traceback.print_exc()
+    
+
+    # Random model search
     model_list = ['resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152',
                     'densenet121', 'densenet169', 'densenet201', 'densenet161',
                     'inception_v3',
@@ -375,7 +428,6 @@ if __name__ == '__main__':
                     'nasnetamobile', 'pnasnet5large',
                     'inceptionresnetv2', 'polynet']
                     #'dpn68', 'dpn68b', 'dpn92', 'dpn98', 'dpn131', 'dpn107']
-
     main(args)
 
     # for i in range(100):
@@ -388,3 +440,23 @@ if __name__ == '__main__':
     #   except Exception as e:
     #     print('Oops failed!')
     #     traceback.print_exc()
+
+    for i in range(100):
+      args.save_dir = 'models/v' + str(505 + i)
+      args.load_dir = 'models/v' + str(505 + i)
+      args.batch_size = 10 # To be not that safe
+
+      # Random search
+      args.model = random.choice(model_list)
+      args.lr = random.choice([1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 2e-2])
+      args.weight_decay = random.choice([0, 0, 0, 1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 2e-2, 1e-1])
+      args.optimizer_string = random.choice(['SGD', 'Adam', 'RMSprop', 'Adagrad', 'Adadelta'])
+      args.batch_size = random.choice([10,12,14,16,18,20,25])
+
+
+      try:
+        main(args)
+      except Exception as e:
+        print('Oops failed!')
+        traceback.print_exc()
+    '''
