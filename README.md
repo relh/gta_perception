@@ -24,3 +24,6 @@ It contains our custom code.
 
 CarNet is a slightly modified version of the squeeze and excitation ResNet. It contains 4 residual blocks instead of the neighboring 3 and 5.
 CarNet is trained to predict which of the 23 object classes an image contains. 
+
+To make a conda environment for our code, run `conda env create -f env535.yml`
+Then, `source activate env535.yml` and run `python3 carnet.py` with appropriate args
