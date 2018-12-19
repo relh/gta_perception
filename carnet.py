@@ -15,7 +15,7 @@ from torch import nn
 from torch.utils.data import DataLoader, Dataset, random_split
 from torchvision import datasets, transforms
 
-from utils import Runner, get_classes_to_label_map, sum_mse
+from utils import Runner, sum_cross_entropy, get_classes_to_label_map, sum_mse
 
 from cnn_finetune import make_model
 
@@ -118,7 +118,6 @@ def build_image_label_pairs(folders, data_path, task):
 
                 # Append items to dataset
                 if task == 2:
-                  # class_label = [int(x) for x in label_data[3:6]]
                   class_label = label_data[3:6]
                 else:
                   # Index 0 is 23 classes, -1 is 3 classes 
@@ -198,9 +197,6 @@ def build_model(args, gpus):
       pass # TODO make model here
     elif args.task == 2:
       # TODO make this use MSE and have 3 heads, one for X,Y,Z
-      #from se_resnet import se_resnet_custom
-      #model = nn.DataParallel(se_resnet_custom(size=args.model_num_blocks, dropout_p=args.dropout_p, num_classes=3), #device_ids=gpus)
-      # pass # TODO make model here similar to task 3
       model = make_model(args.model, num_classes=3, dropout_p=args.dropout_p, pretrained=True)
     elif args.task == 3 or args.task == 4:
       model = make_model(args.model, num_classes=23, dropout_p=args.dropout_p, pretrained=True)
@@ -271,8 +267,11 @@ def main(args):
     print("Declaring multi_loss function...")
     # This trainer class does all the work
     print("Instantiating runner...")
- #   runner = Runner(model, optimizer, sum_cross_entropy, args.save_dir)
-    runner = Runner(model, optimizer, sum_mse, args.save_dir)
+
+    if args.task ==2:
+        runner = Runner(model, optimizer, sum_mse, args.task, args.save_dir,args.task)
+    else:
+        runner = Runner(model, optimizer, sum_cross_entropy, args.save_dir)
     best_acc = 0
     if "train" in args.modes.lower():
         print("Begin training... {}".format(str(args.model)))
