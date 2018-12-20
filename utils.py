@@ -137,16 +137,14 @@ class Runner(object):
             loss, accuracy, outputs, logits = self.test(test_data, batch_size)
             if scheduler is not None:
                 scheduler.step(sum(loss))
-            if ep % self.save_freq:
-                self.save(ep+99, accuracy)
+            self.save(str(ep+99), accuracy)
 
             print("training one epoch on original data")
             self.train(train_data, batch_size)
             loss, accuracy, outputs, logits = self.test(test_data, batch_size)
             if scheduler is not None:
                 scheduler.step(sum(loss))
-            if ep % self.save_freq:
-                self.save(ep, accuracy)
+            self.save(str(ep), accuracy)
         return self.best_acc
 
     def save(self, epoch, acc, **kwargs):
