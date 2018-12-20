@@ -103,6 +103,7 @@ def build_image_label_pairs(names, data_path, task, xml=False):
     """This function takes in a set of folders or images 'names' and their root path. It returns a list 
     of tuples of (image paths, class label) where class label is either 0,1,2 as in classes.csv"""
 
+    missing = 0
     image_label_pairs = []
     if xml:
         # Iterative over images
@@ -113,7 +114,9 @@ def build_image_label_pairs(names, data_path, task, xml=False):
                 e = ET.parse(whole_name).getroot()
                 class_name = e[5][0].text
             else:
-                print('annotation for img', img,' does not exist!') # this should never happen!
+                #print('annotation for img', img,' does not exist!') # this should never happen!
+                missing += 1
+                continue
             
             # Append items to dataset
             if task == 2:
@@ -155,6 +158,7 @@ def build_image_label_pairs(names, data_path, task, xml=False):
                       class_label = int(label_data[9])
 
                     image_label_pairs.append((os.path.join(data_path,folder,file_name), class_label))
+    print('Number of missing annotations... {}'.format(missing))
     return image_label_pairs 
 
     
@@ -164,20 +168,18 @@ class CarDataset(Dataset):
         and returns tuples of (image_path, transformed_image_tensor, label_tensor)"""
         self.image_label_pairs = image_label_pairs 
         self.transforms = transforms
-    def __getitem__(self, index):
-        try:
-            im_path, im_class = self.image_label_pairs[index]
-            image_obj = Image.open(im_path) # Open image
 
-            transformed_image = self.transforms(image_obj) # Apply transformations
-            transformed_image.permute(2,0,1) # Swap color channels
-            #transformed_image_np = transformed_image.numpy()
-            #transformed_image = torch.tensor(add_noise_to_image(transformed_image.numpy())).float()
-            return (im_path,
-                   torch.tensor(transformed_image).float(),
-                   torch.from_numpy(np.array(im_class)).long())
-        except:
-            return ('', [], [])
+    def __getitem__(self, index):
+        im_path, im_class = self.image_label_pairs[index]
+        image_obj = Image.open(im_path) # Open image
+
+        transformed_image = self.transforms(image_obj) # Apply transformations
+        transformed_image.permute(2,0,1) # Swap color channels
+        #transformed_image_np = transformed_image.numpy()
+        #transformed_image = torch.tensor(add_noise_to_image(transformed_image.numpy())).float()
+        return (im_path,
+               torch.tensor(transformed_image).float(),
+               torch.from_numpy(np.array(im_class)).long())
 
     def __len__(self):
         return len(self.image_label_pairs)
@@ -199,7 +201,7 @@ def make_dataloader(names, data_path, batch_size, task, modes, xml=False):
               shear=15.0,
               fillcolor=0)]
     # Declare the transforms
-    preprocessing_transforms = [transforms.Resize(384),
+    preprocessing_transforms = [transforms.Resize((384, 698)),
                                     transforms.ToTensor(),
                                     transforms.Normalize(mean=[.362, .358, .347],
                                                          std=[.139, .130, .123])]
