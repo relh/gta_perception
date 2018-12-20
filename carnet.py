@@ -186,7 +186,7 @@ class CarDataset(Dataset):
 
     def __len__(self):
         if len(self.image_label_pairs) > 100000:
-          return 2000
+          return 4000
         return len(self.image_label_pairs)
 
 
@@ -340,9 +340,9 @@ def main(args):
     # This trainer class does all the work
     print("Instantiating runner...")
     if args.task == 2:
-        runner = Runner(model, optimizer, sum_mse, args.task, args.save_dir,args.task)
+        runner = Runner(model, optimizer, sum_mse, args.task, args.save_dir)
     else:
-        runner = Runner(model, optimizer, sum_cross_entropy, args.save_dir)
+        runner = Runner(model, optimizer, sum_cross_entropy, args.task, args.save_dir)
     best_acc = 0
 
     if "train" in args.modes.lower():
@@ -424,7 +424,7 @@ if __name__ == '__main__':
     p.add_argument("--trainval_split_percentage", default=0.90, type=float, help="percentage of data to use in training")
 
     # Increasing these adds regularization
-    p.add_argument("--batch_size", default=20, type=int, help="batch size")
+    p.add_argument("--batch_size", default=15, type=int, help="batch size")
     p.add_argument("--dropout_p", default=0.35, type=float, help="final layer p of neurons to drop")
     p.add_argument("--weight_decay", default=8e-2, type=float, help="weight decay")
 
@@ -433,9 +433,9 @@ if __name__ == '__main__':
     p.add_argument("--momentum", default=0.9, type=float, help="momentum value")
 
     p.add_argument("--save_dir", default='models/v888', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v72', type=str, help="what model dir to load")
-    p.add_argument("--load_epoch", default=6, type=int, help="what epoch to load, -1 for none")
-    p.add_argument("--num_epoch", default=6, type=int, help="number of epochs to train")
+    p.add_argument("--load_dir", default='models/v777', type=str, help="what model dir to load")
+    p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
+    p.add_argument("--num_epoch", default=3, type=int, help="number of epochs to train")
     p.add_argument("--modes", default='Train|Test', type=str, help="string containing modes")
 
     p.add_argument("--task", default=4, type=int, help="what task to train a model, or pretrained model")
