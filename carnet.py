@@ -123,7 +123,7 @@ def build_image_label_pairs(names, data_path, task, xml=False):
             
             # Append items to dataset
             if task == 2:
-                class_label = 0
+                class_label = 0 # shouldn't we pass the x,y,z coordinates intsead of labels for task 2?
                 if class_name == 'car':
                     class_label = 1
                 elif class_name == 'bus' or class_name == 'motorbike':
