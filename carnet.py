@@ -182,6 +182,8 @@ class CarDataset(Dataset):
                torch.from_numpy(np.array(im_class)).long())
 
     def __len__(self):
+        if len(self.image_label_pairs) > 100000:
+          return 2000
         return len(self.image_label_pairs)
 
 
