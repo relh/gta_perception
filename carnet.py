@@ -201,7 +201,7 @@ def make_dataloader(names, data_path, batch_size, task, modes, xml=False):
               shear=15.0,
               fillcolor=0)]
     # Declare the transforms
-    preprocessing_transforms = [transforms.Resize((384, 698)),
+    preprocessing_transforms = [transforms.Resize((384, 682)),
                                     transforms.ToTensor(),
                                     transforms.Normalize(mean=[.362, .358, .347],
                                                          std=[.139, .130, .123])]
@@ -419,7 +419,7 @@ if __name__ == '__main__':
     p.add_argument("--trainval_split_percentage", default=0.90, type=float, help="percentage of data to use in training")
 
     # Increasing these adds regularization
-    p.add_argument("--batch_size", default=10, type=int, help="batch size")
+    p.add_argument("--batch_size", default=14, type=int, help="batch size")
     p.add_argument("--dropout_p", default=0.35, type=float, help="final layer p of neurons to drop")
     p.add_argument("--weight_decay", default=8e-2, type=float, help="weight decay")
 
