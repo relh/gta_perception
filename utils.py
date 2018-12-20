@@ -134,6 +134,12 @@ class Runner(object):
             self.epoch = ep
             print("training one epoch on new data")
             self.train(more_train_data, batch_size)
+            loss, accuracy, outputs, logits = self.test(test_data, batch_size)
+            if scheduler is not None:
+                scheduler.step(sum(loss))
+            if ep % self.save_freq:
+                self.save(ep+99, accuracy)
+
             print("training one epoch on original data")
             self.train(train_data, batch_size)
             loss, accuracy, outputs, logits = self.test(test_data, batch_size)
