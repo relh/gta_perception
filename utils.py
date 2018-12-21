@@ -148,7 +148,6 @@ class Runner(object):
         return self.best_acc
 
     def save(self, epoch, acc, **kwargs):
-        set_trace()
         if self.save_dir is not None:
             model_out_path = Path(self.save_dir)
             state = {"epoch": epoch, "weight": self.model.state_dict()}

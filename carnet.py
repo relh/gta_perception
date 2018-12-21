@@ -19,7 +19,7 @@ import xml.etree.ElementTree as ET
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-from utils import Runner, sum_cross_entropy, get_classes_to_label_map, sum_mse
+from utils import Runner, sum_cross_entropy, get_classes_to_label_map, sum_mse, list_mapping
 
 from cnn_finetune import make_model
 
@@ -186,7 +186,7 @@ class CarDataset(Dataset):
 
     def __len__(self):
         if len(self.image_label_pairs) > 100000:
-          return 4000
+          return 2000
         return len(self.image_label_pairs)
 
 
@@ -391,17 +391,17 @@ def main(args):
 	        np.save('logits/'+save_path+'.npy', np.array([l for p,l in logits]))
 
         else:
-	        with open('csvs/'+save_path+'.csv', 'w') as sub:
-	          sub.write('guid/image,label\n')
-	          for name, val in outputs:
-	              # Build path
-	              mod_name = name.split('/')[3] + '/' + name.split('/')[4].split('_')[0]
-	              mod_val = int(list_mapping[int(val)])
+          print("writing a submission to \"csvs/{}.csv\"...".format(save_path))
+          with open('csvs/'+save_path+'.csv', 'w') as sub:
+            sub.write('guid/image,label\n')
+            for name, val in outputs:
+                # Build path
+                mod_name = name.split('/')[4] + '/' + name.split('/')[5].split('_')[0]
+                mod_val = int(list_mapping[int(np.argmax(val))])
 
-	              # Print and write row
-	              sub.write(mod_name + ',' + str(mod_val) + '\n')
-
-        np.save('logits/'+save_path+'.npy', np.array([l for p,l in logits]))
+                # Print and write row
+                sub.write(mod_name + ',' + str(mod_val) + '\n')
+          np.save('logits/'+save_path+'.npy', np.array([l for p,l in logits]))
 
         # TODO average multiple logits results
         # This function loads these logits but they should be reshaped with .reshape(-1, 23)
@@ -432,11 +432,11 @@ if __name__ == '__main__':
     p.add_argument("--lr", default=1e-4, type=float, help="learning rate")
     p.add_argument("--momentum", default=0.9, type=float, help="momentum value")
 
-    p.add_argument("--save_dir", default='models/v888', type=str, help="what model dir to save")
-    p.add_argument("--load_dir", default='models/v777', type=str, help="what model dir to load")
+    p.add_argument("--save_dir", default='models/v901', type=str, help="what model dir to save")
+    p.add_argument("--load_dir", default='models/v901', type=str, help="what model dir to load")
     p.add_argument("--load_epoch", default=-1, type=int, help="what epoch to load, -1 for none")
-    p.add_argument("--num_epoch", default=3, type=int, help="number of epochs to train")
-    p.add_argument("--modes", default='Train|Test', type=str, help="string containing modes")
+    p.add_argument("--num_epoch", default=16, type=int, help="number of epochs to train")
+    p.add_argument("--modes", default='|Test', type=str, help="string containing modes")
 
     p.add_argument("--task", default=4, type=int, help="what task to train a model, or pretrained model")
     p.add_argument("--model", default='inception_v4', type=str, help="what pretrained model to start with")
